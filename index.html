@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Baghdatis Academy: Pixel Pathway - Phaser Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #game-container {
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            border: 4px solid #1a1a1a;
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game-container"></div>
+    <script>
+        /**
+         * 🎾 BAGHDATIS ACADEMY: PIXEL PATHWAY
+         * PHASER 3 MIGRATION & VISUAL OVERHAUL
+         */
+
+        const PlayerData = {
+            lvl: 1, xp: 0, money: 100,
+            stats: { power: 15, agility: 15, stamina: 100, touch: 10, serve: 10 },
+            equipment: { racket: "Starter Racket" }
+        };
+
+        const C = {
+            gold: '#f0c040', blue: '#3b82f6', red: '#f43f5e', green: '#10b981',
+            dark: '#0a0a0a', gray: '#333', white: '#fff'
+        };
+
+        // --- BOOT SCENE ---
+        class BootScene extends Phaser.Scene {
+            constructor() { super('BootScene'); }
+            preload() {
+                this.add.text(256, 180, 'LOADING ACADEMY...', { font: '900 14px Courier', fill: '#fff' }).setOrigin(0.5);
+                this.add.rectangle(256, 210, 200, 10, 0x333333);
+
+                this.load.spritesheet('marcos', 'spritesheet_marcos/editgenerate_a_new_16bit_pixel_a_1.png', { frameWidth: 128, frameHeight: 160 });
+                this.load.spritesheet('marcos_hub', 'spritesheet_marcos/editgenerate_a_new_16bit_pixel_a.png', { frameWidth: 128, frameHeight: 160 });
+                this.load.image('title_bg', 'title_bg_hd.png');
+            }
+            create() {
+                this.anims.create({
+                    key: 'm_idle',
+                    frames: this.anims.generateFrameNumbers('marcos', { start: 0, end: 0 }),
+                    frameRate: 1, repeat: -1
+                });
+                this.anims.create({
+                    key: 'm_run',
+                    frames: this.anims.generateFrameNumbers('marcos', { start: 1, end: 2 }),
+                    frameRate: 8, repeat: -1
+                });
+                this.anims.create({
+                    key: 'm_back_idle',
+                    frames: this.anims.generateFrameNumbers('marcos_hub', { start: 0, end: 0 }),
+                    frameRate: 1, repeat: -1
+                });
+                this.anims.create({
+                    key: 'm_back_run',
+                    frames: this.anims.generateFrameNumbers('marcos_hub', { start: 1, end: 2 }),
+                    frameRate: 8, repeat: -1
+                });
+                this.scene.start('TitleScene');
+            }
+        }
+
+        // --- TITLE SCENE ---
+        class TitleScene extends Phaser.Scene {
+            constructor() { super('TitleScene'); }
+            create() {
+                if (this.textures.exists('title_bg')) {
+                    this.add.image(256, 192, 'title_bg').setDisplaySize(512, 384).setAlpha(0.4);
+                }
+                this.add.text(256, 120, 'BAGHDATIS', { font: '900 48px Courier', fill: C.gold }).setOrigin(0.5);
+                this.add.text(256, 165, 'ACADEMY', { font: '900 32px Courier', fill: '#f8a030' }).setOrigin(0.5);
+                this.add.text(256, 195, 'PIXEL PATHWAY', { font: '900 12px Courier', fill: '#00f2ff' }).setOrigin(0.5);
+                const start = this.add.text(256, 280, 'PRESS ENTER TO BEGIN', { font: '900 14px Courier', fill: '#fff' }).setOrigin(0.5);
+                this.tweens.add({ targets: start, alpha: 0, duration: 600, yoyo: true, repeat: -1 });
+                this.input.keyboard.on('keydown-ENTER', () => this.scene.start('OverworldScene'));
+                this.input.keyboard.on('keydown-SPACE', () => this.scene.start('OverworldScene'));
+            }
+        }
+
+        // --- OVERWORLD SCENE ---
+        class OverworldScene extends Phaser.Scene {
+            constructor() { super('OverworldScene'); }
+            create() {
+                this.add.rectangle(256, 192, 512, 384, 0x2d5a27);
+                this.add.grid(256, 192, 512, 384, 32, 32, 0xffffff, 0.05);
+
+                this.hq = this.add.rectangle(100, 100, 140, 80, 0xeeeeee, 0.2).setStrokeStyle(2, 0xaaaaaa);
+                this.add.text(100, 100, 'ACADEMY HQ', { font: '900 10px Courier', fill: '#fff' }).setOrigin(0.5);
+
+                this.shop = this.add.rectangle(412, 100, 120, 80, 0x3b82f6, 0.3).setStrokeStyle(2, 0x3b82f6);
+                this.add.text(412, 100, 'PRO SHOP', { font: '900 10px Courier', fill: '#fff' }).setOrigin(0.5);
+
+                this.dorm = this.add.rectangle(256, 80, 120, 60, 0x8b4513, 0.3).setStrokeStyle(2, 0x8b4513);
+                this.add.text(256, 80, 'DORM', { font: '900 10px Courier', fill: '#fff' }).setOrigin(0.5);
+
+                this.add.rectangle(256, 220, 512, 30, 0xe8c870, 0.3);
+                this.add.rectangle(256, 220, 30, 384, 0xd8b860, 0.3);
+
+                this.matchZone = this.add.rectangle(100, 220, 150, 100, 0x4080ff, 0.1).setStrokeStyle(2, 0x4080ff);
+                this.add.text(100, 220, 'MATCH COURT', { font: '900 10px Courier', fill: '#4080ff' }).setOrigin(0.5);
+
+                this.trainZone = this.add.rectangle(412, 220, 150, 100, 0xff8040, 0.1).setStrokeStyle(2, 0xff8040);
+                this.add.text(412, 220, 'TRAINING ZONE', { font: '900 10px Courier', fill: '#ff8040' }).setOrigin(0.5);
+
+                this.physics.add.existing(this.matchZone, true);
+                this.physics.add.existing(this.trainZone, true);
+                this.physics.add.existing(this.shop, true);
+
+                this.player = this.physics.add.sprite(256, 300, 'marcos');
+                this.player.setScale(0.5);
+                this.player.body.setSize(60, 40).setOffset(34, 110);
+                this.player.setCollideWorldBounds(true);
+
+                this.cursors = this.input.keyboard.createCursorKeys();
+                this.keyZ = this.input.keyboard.addKey('Z');
+                this.hintText = this.add.text(256, 360, 'EXPLORE THE ACADEMY', { font: '900 12px Courier', fill: '#fff' }).setOrigin(0.5);
+            }
+
+            update() {
+                this.player.setVelocity(0);
+                const speed = 160;
+                let moving = false, movingBack = false;
+
+                if (this.cursors.left.isDown) { this.player.setVelocityX(-speed); this.player.flipX = true; moving = true; }
+                else if (this.cursors.right.isDown) { this.player.setVelocityX(speed); this.player.flipX = false; moving = true; }
+                if (this.cursors.up.isDown) { this.player.setVelocityY(-speed); moving = true; movingBack = true; }
+                else if (this.cursors.down.isDown) { this.player.setVelocityY(speed); moving = true; movingBack = false; }
+
+                if (moving) {
+                    if (movingBack) this.player.play('m_back_run', true);
+                    else this.player.play('m_run', true);
+                } else {
+                    if (this.player.anims.currentAnim && this.player.anims.currentAnim.key.includes('back')) this.player.play('m_back_idle', true);
+                    else this.player.play('m_idle', true);
+                }
+
+                this.hintText.setText('EXPLORE THE ACADEMY');
+                this.physics.overlap(this.player, [this.shop, this.matchZone, this.trainZone], (p, zone) => {
+                    if (zone === this.shop) this.hintText.setText('PRESS [Z] TO ENTER PRO SHOP');
+                    else if (zone === this.matchZone) this.hintText.setText('PRESS [Z] TO START MATCH');
+                    else if (zone === this.trainZone) this.hintText.setText('PRESS [Z] TO ENTER DRILLS');
+
+                    if (Phaser.Input.Keyboard.JustDown(this.keyZ)) {
+                        if (zone === this.shop) this.scene.start('ShopScene');
+                        else if (zone === this.matchZone) this.scene.start('MG1_SplitStepScene');
+                        else if (zone === this.trainZone) this.scene.start('TrainingMenuScene');
+                    }
+                });
+            }
+        }
+
+        // --- SHOP SCENE ---
+        class ShopScene extends Phaser.Scene {
+            constructor() { super('ShopScene'); }
+            create() {
+                this.add.rectangle(256, 192, 512, 384, 0x111122);
+                this.add.text(256, 40, 'PRO SHOP', { font: '900 24px Courier', fill: C.blue }).setOrigin(0.5);
+                this.add.text(256, 70, `COINS: ${PlayerData.money}¢`, { font: '900 14px Courier', fill: C.gold }).setOrigin(0.5);
+                const items = [
+                    { name: "POWER RACKET", cost: 50, stat: "power", desc: "Harder groundstrokes" },
+                    { name: "SPEED SHOES", cost: 40, stat: "agility", desc: "Faster movement" },
+                    { name: "STAMINA DRINK", cost: 20, stat: "stamina", desc: "Less tired" }
+                ];
+                items.forEach((item, i) => {
+                    const y = 140 + i * 70;
+                    const card = this.add.rectangle(256, y, 400, 60, 0x222233).setInteractive();
+                    this.add.text(256, y - 10, item.name, { font: 'bold 16px Courier' }).setOrigin(0.5);
+                    this.add.text(256, y + 15, `${item.desc} | ${item.cost}¢`, { font: '10px Courier', fill: '#888' }).setOrigin(0.5);
+                    card.on('pointerover', () => card.setFillStyle(0x333344));
+                    card.on('pointerout', () => card.setFillStyle(0x222233));
+                    card.on('pointerdown', () => {
+                        if (PlayerData.money >= item.cost) {
+                            PlayerData.money -= item.cost;
+                            PlayerData.stats[item.stat] += 5;
+                            this.scene.start('OverworldScene');
+                        }
+                    });
+                });
+                this.add.text(256, 350, 'PRESS ESC TO EXIT', { font: '900 12px Courier', fill: '#666' }).setOrigin(0.5);
+                this.input.keyboard.on('keydown-ESC', () => this.scene.start('OverworldScene'));
+            }
+        }
+
+        // --- TRAINING MENU SCENE ---
+        class TrainingMenuScene extends Phaser.Scene {
+            constructor() { super('TrainingMenuScene'); }
+            create() {
+                this.add.rectangle(256, 192, 512, 384, 0x111122);
+                this.add.text(256, 40, 'BUILD CHAMPION STATS', { font: '900 18px Courier', fill: C.gold }).setOrigin(0.5);
+                const drills = [
+                    { name: "MG1: SPLIT-STEP SPRINT", scene: "MG1_SplitStepScene", color: C.blue },
+                    { name: "MG2: BORROW THE PACE", scene: "MG2_BorrowPaceScene", color: C.gold },
+                    { name: "MG3: TOPSPIN SMASH", scene: "MG3_TopspinSmashScene", color: C.red },
+                    { name: "MG4: SERVICE TOWER", scene: "MG4_ServiceTossScene", color: C.white },
+                    { name: "MG5: FIGHTING SPIRIT", scene: "MG5_FightingSpiritScene", color: '#9040e0' }
+                ];
+                drills.forEach((d, i) => {
+                    const y = 100 + i * 50;
+                    const btn = this.add.rectangle(256, y, 350, 40, 0x222233).setInteractive();
+                    this.add.text(256, y, d.name, { font: 'bold 14px Courier', fill: d.color }).setOrigin(0.5);
+                    btn.on('pointerover', () => btn.setStrokeStyle(2, 0xffffff));
+                    btn.on('pointerout', () => btn.setStrokeStyle(0));
+                    btn.on('pointerdown', () => this.scene.start(d.scene));
+                });
+                this.add.text(256, 350, 'PRESS ESC TO EXIT', { font: '900 10px Courier', fill: '#666' }).setOrigin(0.5);
+                this.input.keyboard.on('keydown-ESC', () => this.scene.start('OverworldScene'));
+            }
+        }
+
+        // --- REDESIGNED MINI-GAMES (SKELETONS) ---
+        class MG1_SplitStepScene extends Phaser.Scene {
+            constructor() { super('MG1_SplitStepScene'); }
+            create() {
+                this.add.text(256, 192, 'MG1: SPLIT-STEP SPRINT\n(Redesign Pending)', { align: 'center' }).setOrigin(0.5);
+                this.input.keyboard.on('keydown-ESC', () => this.scene.start('TrainingMenuScene'));
+            }
+        }
+        class MG2_BorrowPaceScene extends Phaser.Scene {
+            constructor() { super('MG2_BorrowPaceScene'); }
+            create() {
+                this.add.text(256, 192, 'MG2: BORROW THE PACE\n(Redesign Pending)', { align: 'center' }).setOrigin(0.5);
+                this.input.keyboard.on('keydown-ESC', () => this.scene.start('TrainingMenuScene'));
+            }
+        }
+        class MG3_TopspinSmashScene extends Phaser.Scene {
+            constructor() { super('MG3_TopspinSmashScene'); }
+            create() {
+                this.add.text(256, 192, 'MG3: TOPSPIN SMASH\n(Redesign Pending)', { align: 'center' }).setOrigin(0.5);
+                this.input.keyboard.on('keydown-ESC', () => this.scene.start('TrainingMenuScene'));
+            }
+        }
+        class MG4_ServiceTossScene extends Phaser.Scene {
+            constructor() { super('MG4_ServiceTossScene'); }
+            create() {
+                this.add.text(256, 192, 'MG4: SERVICE TOSS\n(Redesign Pending)', { align: 'center' }).setOrigin(0.5);
+                this.input.keyboard.on('keydown-ESC', () => this.scene.start('TrainingMenuScene'));
+            }
+        }
+        class MG5_FightingSpiritScene extends Phaser.Scene {
+            constructor() { super('MG5_FightingSpiritScene'); }
+            create() {
+                this.add.text(256, 192, 'MG5: FIGHTING SPIRIT\n(Redesign Pending)', { align: 'center' }).setOrigin(0.5);
+                this.input.keyboard.on('keydown-ESC', () => this.scene.start('TrainingMenuScene'));
+            }
+        }
+
+        // --- CONFIG ---
+        const config = {
+            type: Phaser.AUTO,
+            width: 512,
+            height: 384,
+            parent: 'game-container',
+            pixelArt: true,
+            physics: {
+                default: 'arcade',
+                arcade: { gravity: { y: 0 }, debug: false }
+            },
+            scene: [BootScene, TitleScene, OverworldScene, ShopScene, TrainingMenuScene,
+                MG1_SplitStepScene, MG2_BorrowPaceScene, MG3_TopspinSmashScene, MG4_ServiceTossScene, MG5_FightingSpiritScene]
+        };
+        const game = new Phaser.Game(config);
+    </script>
+</body>
+
+</html>
