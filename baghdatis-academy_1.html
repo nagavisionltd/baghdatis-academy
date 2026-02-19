@@ -562,7 +562,7 @@
       aceTimer: 0, // Track time for ace detection
       surfStats: {
         hard: {
-          bounce: 0.82, friction: 0.92, speed: 1.05, color: '#4060c0',
+          bounce: 0.88, friction: 0.92, speed: 1.05, color: '#4060c0',
           particles: ['#6080e0', '#80a0ff', '#fff'], pName: 'HARD'
         },
         clay: {
@@ -570,7 +570,7 @@
           particles: ['#d08050', '#e0a060', '#c87040'], pName: 'CLAY'
         },
         grass: {
-          bounce: 0.68, friction: 1.05, speed: 1.12, color: '#40a040',
+          bounce: 0.76, friction: 1.05, speed: 1.12, color: '#40a040',
           particles: ['#40c050', '#60e060', '#80ff80'], pName: 'GRASS'
         }
       },
@@ -614,7 +614,7 @@
         if (side === 'player') {
           const sv = (1.2 + Stats.serve * 0.008) * surf.speed;
           b.cx = this.p.cx; b.cz = this.p.cz;
-          b.ch = 0.6; b.vch = perfect ? 0.65 : 0.85;
+          b.ch = 0.8; b.vch = perfect ? 0.85 : 1.1;
           b.vcz = -(sv + Math.random() * 0.15);
           b.vcx = (Math.random() - 0.5) * 0.25;
           b.spin = perfect ? 0.5 : 0.2; // Perfect serve = more topspin kick
@@ -627,7 +627,7 @@
         } else {
           const oSv = (1.0 + this.oGames * 0.03) * surf.speed;
           b.cx = this.o.cx; b.cz = this.o.cz;
-          b.ch = 0.55; b.vch = 0.75;
+          b.ch = 0.75; b.vch = 0.95;
           b.vcz = oSv + Math.random() * 0.2;
           b.vcx = (this.p.cx * 0.35 + (Math.random() - 0.5) * 0.3);
           b.spin = (Math.random() - 0.5) * 0.3;
@@ -653,7 +653,7 @@
 
         b.vcx = (targetX - b.cx) * 0.75;
         b.vcz = 1.0 + Math.random() * 0.2;
-        b.vch = 0.4 + Math.random() * 0.2;
+        b.vch = 0.65 + Math.random() * 0.3;
         b.spin = (Math.random() - 0.5) * 0.4;
         b.active = true; this.bounced = 0;
 
@@ -753,13 +753,13 @@
 
         if (type === 'topspin' && !lunge) {
           b.spin = (0.6 + (perfectCharge ? 0.4 : 0)) * spinMult;
-          b.vcz = baseVcz * 1.05; b.vch = 0.35 - (perfectCharge ? 0.15 : 0);
+          b.vcz = baseVcz * 1.05; b.vch = 0.55 - (perfectCharge ? 0.15 : 0);
           sfxTopspin(); Shake.add(perfectCharge ? 8 : 4);
           Particles.emit(...this.bsp(), { count: perfectCharge ? 25 : 14, color: ['#c8ff40', '#fff'], speed: 80, life: 0.6, glow: true });
           Floats.add(perfectCharge ? 'POWER TOPSPIN!' : 'TOPSPIN!', COURT.toScreen(p.cx, p.cz).x, COURT.toScreen(p.cx, p.cz).y - 35, C.green, 9);
         } else if (type === 'slice' && !lunge) {
           b.spin = -(0.5 + (perfectCharge ? 0.3 : 0)) * spinMult;
-          b.vcz = baseVcz * 0.75; b.vch = 0.45; // Floats more
+          b.vcz = baseVcz * 0.75; b.vch = 0.7; // Floats more
           sfxSlice(); Shake.add(perfectCharge ? 5 : 2);
           Floats.add(perfectCharge ? 'HEAVY SLICE!' : 'SLICE!', COURT.toScreen(p.cx, p.cz).x, COURT.toScreen(p.cx, p.cz).y - 35, C.cyan, 9);
         } else if (type === 'lob' && !lunge) {
@@ -772,7 +772,7 @@
           Floats.add('DROP!', COURT.toScreen(p.cx, p.cz).x, COURT.toScreen(p.cx, p.cz).y - 35, C.orange, 9);
         } else {
           b.vcz = (lunge ? baseVcz * 0.5 : baseVcz * 1.15);
-          b.vch = lunge ? 0.75 : 0.2 - (perfectCharge ? 0.1 : 0);
+          b.vch = lunge ? 0.9 : 0.4 - (perfectCharge ? 0.1 : 0);
           sfxHit(); Shake.add(perfectCharge ? 7 : (lunge ? 3 : 2));
           if (perfectCharge && !lunge) Floats.add('WINNER!', COURT.toScreen(p.cx, p.cz).x, COURT.toScreen(p.cx, p.cz).y - 35, '#fff', 12);
           if (lunge) Floats.add('LUNGE!', COURT.toScreen(p.cx, p.cz).x, COURT.toScreen(p.cx, p.cz).y - 35, C.white, 7);
@@ -966,7 +966,7 @@
           const surf = this.surfStats[this.surface];
 
           // Spin-modified gravity: topspin dips harder, slice floats longer
-          const spinGravity = 2.6 + b.spin * 1.8; // Lower base for more air time
+          const spinGravity = 2.0 + b.spin * 1.5; // Reduced gravity for more air time
           b.ch += b.vch * dt; b.vch -= spinGravity * dt;
 
           // Spin lateral drift (curve ball effect)
@@ -997,7 +997,7 @@
             b.vch = Math.abs(b.vch) * surf.bounce * spinBounce;
             // Add a small kick on bounce
             b.vcz *= (surf.friction + b.spin * 0.1);
-            if (Math.abs(b.vch) < 0.15) b.vch = 0; // Hard stop
+            if (Math.abs(b.vch) < 0.1) b.vch = 0; // Hard stop
             sfxBounce(this.surface);
             this.bounced++;
             // Surface friction on bounce
@@ -1336,9 +1336,9 @@
         }
       ],
       zones: [
-        { x: 360, y: 140, w: 110, h: 65, label: 'TRAINING', color: '#ff804044', bg: '#ff804011', action: 'training', icon: '🎾' },
+        { x: 195, y: 140, w: 140, h: 65, label: 'TRAINING', color: '#ff804044', bg: '#ff804011', action: 'training', icon: '🎾' },
         { x: 25, y: 135, w: 110, h: 65, label: 'MATCH', color: '#4080ff44', bg: '#4080ff11', action: 'match', icon: '⚔' },
-        { x: 185, y: 318, w: 130, h: 50, label: 'PRO SHOP', color: '#c040ff44', bg: '#c040ff11', action: 'shop', icon: '🛒' }
+        { x: W - 138, y: 50, w: 134, h: 50, label: 'PRO SHOP', color: '#c040ff44', bg: '#c040ff11', action: 'shop', icon: '🛒' }
       ],
       enter() {
         this.t = 0; this.activeNPC = null; this.dlgLine = 0;
@@ -1544,7 +1544,7 @@
         // === BUILDINGS ===
         this.drawBuilding(2, 48, 125, 48, '#e8d8c0', '#c83828', 10, 'ACADEMY HQ', 4, '#5a3018');
         this.drawBuilding(W - 138, 48, 134, 48, '#d0e0f8', '#2060a8', 10, 'PRO SHOP', 4, '#2850a0');
-        this.drawBuilding(178, 55, 155, 40, '#e0d0b8', '#806030', 8, 'DORMITORY', 5, '#6a4020');
+        this.drawBuilding(178, 55, 155, 40, '#e8d0b0', '#d06020', 8, 'GYM / TRAINING', 5, '#6a4020');
 
         // === DECORATIVE ELEMENTS ===
         // Trees (swaying)
@@ -1555,6 +1555,33 @@
         this.drawFountain(256, 260);
         // Benches
         [[135, 238], [370, 238]].forEach(([bx, by]) => { px(bx, by, 24, 4, '#6a4020'); px(bx + 2, by + 4, 2, 4, '#5a3018'); px(bx + 20, by + 4, 2, 4, '#5a3018'); px(bx, by - 2, 24, 2, '#7a5030'); });
+
+        // === BUS / COACH (future city travel) ===
+        const busX = 210, busY = 320;
+        // Body
+        px(busX, busY, 80, 32, '#2060c0'); px(busX, busY, 80, 4, '#3080e0');
+        px(busX, busY + 28, 80, 4, '#1a4a90');
+        // Windows
+        for (let wi = 0; wi < 5; wi++) px(busX + 6 + wi * 15, busY + 6, 11, 10, '#a0d8ff');
+        // Door
+        px(busX + 68, busY + 10, 10, 18, '#1a3060'); px(busX + 70, busY + 14, 6, 2, '#80c0e0');
+        // Wheels
+        ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(busX + 16, busY + 34, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(busX + 64, busY + 34, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#444'; ctx.beginPath(); ctx.arc(busX + 16, busY + 34, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(busX + 64, busY + 34, 2, 0, Math.PI * 2); ctx.fill();
+        // Headlights
+        px(busX - 2, busY + 10, 3, 6, '#ffee40'); px(busX + 79, busY + 10, 3, 6, '#ff4040');
+        // Label on bus
+        px(busX + 14, busY + 20, 52, 9, 'rgba(0,0,0,0.7)');
+        txt('CITY BUS', busX + 40, busY + 27, C.gold, 5, 'center');
+        // "COMING SOON" tooltip
+        const nearBus = Math.sqrt((this.px2 - (busX + 40)) ** 2 + (this.py - (busY + 16)) ** 2) < 55;
+        if (nearBus) {
+          px(busX + 10, busY - 18, 60, 14, 'rgba(0,0,0,0.88)');
+          px(busX + 10, busY - 18, 60, 1, '#ffcc00cc');
+          txt('COMING SOON', busX + 40, busY - 8, C.gold, 5, 'center');
+        }
         // Fence segments
         for (let fi = 0; fi < 6; fi++) { const fx2 = 25 + fi * 22; px(fx2, 95, 2, 12, '#8a7060'); px(fx2 - 4, 97, 10, 1, '#a08070'); px(fx2 - 4, 102, 10, 1, '#a08070'); }
 
