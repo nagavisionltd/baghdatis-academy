@@ -363,7 +363,12 @@
     let STATE = null;
     let freezeT = 0; // Global hit-stop freeze timer
     let curMap = 0; // 0 = Academy, 1 = City Gym
-    function go(s) { if (STATE?.exit) STATE.exit(); STATE = s; if (STATE?.enter) STATE.enter(); }
+    function go(s) { 
+      if (STATE?.exit) STATE.exit(); 
+      stopBGM(); // Prevent music layering
+      STATE = s; 
+      if (STATE?.enter) STATE.enter(); 
+    }
 
     // ═══ INTRO CUTSCENE ════════════════════════════════════
     const IntroCutsceneState = {
@@ -379,7 +384,7 @@
         if (Transition.active) return;
         this.t += dt;
         if (JP['Enter'] || JP['KeyZ'] || JP['Space']) {
-          this.t += 2; // Fast forward
+          this.t += 3; // Faster skip
         }
         if (this.t > 12) goTransition(HubState);
         if (JP['Escape']) goTransition(HomeState);
@@ -1508,6 +1513,13 @@
 
       enter() {
         this.t = 0; this.activeNPC = null; this.dlgLine = 0;
+        stopBGM(); // Ensure chiptune music stops
+        // Safe spawn to avoid immediate re-triggering of bus
+        if (curMap === 0) {
+          this.px2 = W / 2; this.py = H * 0.65;
+        } else {
+          this.px2 = 100; this.py = H * 0.7;
+        }
         // Spawn clouds
         this.clouds = [];
         for (let i = 0; i < 5; i++) this.clouds.push({ x: Math.random() * W, y: 10 + Math.random() * 50, w: 40 + Math.random() * 60, speed: 8 + Math.random() * 12 });
@@ -1517,6 +1529,7 @@
         Particles.pool = [];
       },
       update(dt) {
+        if (Transition.active) return;
         this.t += dt;
         const cur = this.mapData[curMap];
         // Animate clouds
