@@ -380,58 +380,66 @@
     }
 
     // ═══ INTRO CUTSCENE ════════════════════════════════════
-    const IntroCutsceneState = {
-      t: 0, phase: 0, 
-      lines: [
-        "In the heart of the city...",
-        "A legacy was born.",
-        "One racket. One dream.",
-        "To be the best at Baghdatis Academy."
+    const StoryIntroState = {
+      t: 0, transitioning: false, images: [], loaded: 0,
+      story: [
+        { img: "assets/intro/intro_1_player.png", text: "A legend of the court, his passion was unmatched." },
+        { img: "assets/intro/intro_2_svitolina.png", text: "After his final match, a new chapter began..." },
+        { img: "assets/intro/intro_3_wu.png", text: "Sharing his wisdom with a new generation." }
       ],
-      enter() { this.t = 0; this.phase = 0; startBGM(); },
+      enter() { 
+        this.t = 0; this.transitioning = false; this.loaded = 0;
+        this.images = this.story.map(s => {
+          const img = new Image();
+          img.src = s.img;
+          img.onload = () => this.loaded++;
+          return img;
+        });
+        startBGM(); 
+      },
       update(dt) {
-        if (Transition.active) return;
+        if(this.loaded < this.images.length) return; // Wait for images
+        if(Transition.active || this.transitioning) return;
         this.t += dt;
-        if (JP['Enter'] || JP['KeyZ'] || JP['Space']) {
-          this.t += 3; // Faster skip
+        const sceneDuration = 4;
+        if(JP['KeyZ'] || JP['Enter']) {
+          this.t += sceneDuration; // Skip current scene
         }
-        if (this.t > 12) goTransition(HubState);
+        if (this.t > this.story.length * sceneDuration) {
+          this.transitioning = true;
+          goTransition(HubState);
+        }
         if (JP['Escape']) goTransition(HomeState);
       },
       draw() {
-        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-        
-        // Panning Background
-        const scroll = this.t * 20;
-        ctx.save();
-        ctx.translate(-scroll % W, 0);
-        ctx.drawImage(introBg, 0, 0, W, H);
-        ctx.drawImage(introBg, W, 0, W, H);
-        ctx.restore();
+        ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
+        if (this.loaded < this.images.length) {
+          txt(`Loading Assets... ${this.loaded}/${this.images.length}`, W/2, H/2, '#fff', 8, 'center');
+          return;
+        }
+        const sceneDuration = 4;
+        const sceneIndex = Math.min(this.story.length - 1, Math.floor(this.t / sceneDuration));
+        const sceneTime = this.t % sceneDuration;
+
+        // Fade effect for image
+        const imgAlpha = sceneTime < 0.5 ? sceneTime / 0.5 : (sceneTime > 3.5 ? 1 - (sceneTime - 3.5) / 0.5 : 1);
+        ctx.globalAlpha = imgAlpha;
+        if (this.images[sceneIndex] && this.images[sceneIndex].complete) {
+          ctx.drawImage(this.images[sceneIndex], 0, 0, W, H);
+        }
+        ctx.globalAlpha = 1;
 
         // Cinematic Bars
-        px(0, 0, W, 60, '#000');
-        px(0, H - 60, W, 60, '#000');
+        px(0, 0, W, 40, '#000');
+        px(0, H - 40, W, 40, '#000');
 
-        // Text Phases
-        const lineIdx = Math.floor(this.t / 3);
-        if (lineIdx < this.lines.length) {
-          const lineT = (this.t % 3);
-          const alpha = lineT < 0.5 ? lineT / 0.5 : (lineT > 2.5 ? 1 - (lineT - 2.5) / 0.5 : 1);
-          ctx.globalAlpha = clamp(alpha, 0, 1);
-          txt(this.lines[lineIdx], W / 2, H / 2 + 100, C.white, 8, 'center');
-          ctx.globalAlpha = 1;
-        }
-
-        // Character Silhouette
-        const charX = W / 2 + Math.sin(this.t) * 50;
-        const breathe = Math.sin(this.t * 3) * 2;
-        ctx.save();
-        ctx.filter = 'brightness(0) shadow(0 0 10px rgba(59,130,246,0.5))';
-        drawSpr('ready', charX - 32, H / 2 - 40 + breathe, 64, 80);
-        ctx.restore();
-
-        txt('SKIP: Z', W - 10, H - 10, C.dim, 6, 'right');
+        // Fade effect for text
+        const textAlpha = sceneTime < 1 ? sceneTime / 1 : (sceneTime > 3 ? 1 - (sceneTime - 3) / 1 : 1);
+        ctx.globalAlpha = textAlpha;
+        txt(this.story[sceneIndex].text, W/2, H - 22, '#fff', 7, 'center');
+        ctx.globalAlpha = 1;
+        
+        txt('SKIP: Z', W - 30, 20, '#555', 6, 'center');
       }
     };
 
@@ -594,7 +602,7 @@
           if (JP['ArrowUp']) { this.sel = (this.sel - 1 + 3) % 3; sfxMenuUp(); }
           if (JP['ArrowDown']) { this.sel = (this.sel + 1) % 3; sfxMenuDown(); }
           if (JP['Enter'] || JP['KeyZ']) {
-            if (this.sel === 0) { sfxConfirm(); goTransition(IntroCutsceneState); }
+            if (this.sel === 0) { sfxConfirm(); goTransition(StoryIntroState); }
             else if (this.sel === 1) { sfxConfirm(); goTransition(TrainingSelectState); }
             else sfxMenu();
           }

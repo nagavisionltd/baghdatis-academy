@@ -380,58 +380,66 @@
     }
 
     // ═══ INTRO CUTSCENE ════════════════════════════════════
-    const IntroCutsceneState = {
-      t: 0, phase: 0, 
-      lines: [
-        "In the heart of the city...",
-        "A legacy was born.",
-        "One racket. One dream.",
-        "To be the best at Baghdatis Academy."
+    const StoryIntroState = {
+      t: 0, transitioning: false, images: [], loaded: 0,
+      story: [
+        { img: "assets/intro/intro_1_player.png", text: "A legend of the court, his passion was unmatched." },
+        { img: "assets/intro/intro_2_svitolina.png", text: "After his final match, a new chapter began..." },
+        { img: "assets/intro/intro_3_wu.png", text: "Sharing his wisdom with a new generation." }
       ],
-      enter() { this.t = 0; this.phase = 0; startBGM(); },
+      enter() { 
+        this.t = 0; this.transitioning = false; this.loaded = 0;
+        this.images = this.story.map(s => {
+          const img = new Image();
+          img.src = s.img;
+          img.onload = () => this.loaded++;
+          return img;
+        });
+        startBGM(); 
+      },
       update(dt) {
-        if (Transition.active) return;
+        if(this.loaded < this.images.length) return; // Wait for images
+        if(Transition.active || this.transitioning) return;
         this.t += dt;
-        if (JP['Enter'] || JP['KeyZ'] || JP['Space']) {
-          this.t += 3; // Faster skip
+        const sceneDuration = 4;
+        if(JP['KeyZ'] || JP['Enter']) {
+          this.t += sceneDuration; // Skip current scene
         }
-        if (this.t > 12) goTransition(HubState);
+        if (this.t > this.story.length * sceneDuration) {
+          this.transitioning = true;
+          goTransition(HubState);
+        }
         if (JP['Escape']) goTransition(HomeState);
       },
       draw() {
-        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-        
-        // Panning Background
-        const scroll = this.t * 20;
-        ctx.save();
-        ctx.translate(-scroll % W, 0);
-        ctx.drawImage(introBg, 0, 0, W, H);
-        ctx.drawImage(introBg, W, 0, W, H);
-        ctx.restore();
+        ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
+        if (this.loaded < this.images.length) {
+          txt(`Loading Assets... ${this.loaded}/${this.images.length}`, W/2, H/2, '#fff', 8, 'center');
+          return;
+        }
+        const sceneDuration = 4;
+        const sceneIndex = Math.min(this.story.length - 1, Math.floor(this.t / sceneDuration));
+        const sceneTime = this.t % sceneDuration;
+
+        // Fade effect for image
+        const imgAlpha = sceneTime < 0.5 ? sceneTime / 0.5 : (sceneTime > 3.5 ? 1 - (sceneTime - 3.5) / 0.5 : 1);
+        ctx.globalAlpha = imgAlpha;
+        if (this.images[sceneIndex] && this.images[sceneIndex].complete) {
+          ctx.drawImage(this.images[sceneIndex], 0, 0, W, H);
+        }
+        ctx.globalAlpha = 1;
 
         // Cinematic Bars
-        px(0, 0, W, 60, '#000');
-        px(0, H - 60, W, 60, '#000');
+        px(0, 0, W, 40, '#000');
+        px(0, H - 40, W, 40, '#000');
 
-        // Text Phases
-        const lineIdx = Math.floor(this.t / 3);
-        if (lineIdx < this.lines.length) {
-          const lineT = (this.t % 3);
-          const alpha = lineT < 0.5 ? lineT / 0.5 : (lineT > 2.5 ? 1 - (lineT - 2.5) / 0.5 : 1);
-          ctx.globalAlpha = clamp(alpha, 0, 1);
-          txt(this.lines[lineIdx], W / 2, H / 2 + 100, C.white, 8, 'center');
-          ctx.globalAlpha = 1;
-        }
-
-        // Character Silhouette
-        const charX = W / 2 + Math.sin(this.t) * 50;
-        const breathe = Math.sin(this.t * 3) * 2;
-        ctx.save();
-        ctx.filter = 'brightness(0) shadow(0 0 10px rgba(59,130,246,0.5))';
-        drawSpr('ready', charX - 32, H / 2 - 40 + breathe, 64, 80);
-        ctx.restore();
-
-        txt('SKIP: Z', W - 10, H - 10, C.dim, 6, 'right');
+        // Fade effect for text
+        const textAlpha = sceneTime < 1 ? sceneTime / 1 : (sceneTime > 3 ? 1 - (sceneTime - 3) / 1 : 1);
+        ctx.globalAlpha = textAlpha;
+        txt(this.story[sceneIndex].text, W/2, H - 22, '#fff', 7, 'center');
+        ctx.globalAlpha = 1;
+        
+        txt('SKIP: Z', W - 30, 20, '#555', 6, 'center');
       }
     };
 
@@ -594,7 +602,7 @@
           if (JP['ArrowUp']) { this.sel = (this.sel - 1 + 3) % 3; sfxMenuUp(); }
           if (JP['ArrowDown']) { this.sel = (this.sel + 1) % 3; sfxMenuDown(); }
           if (JP['Enter'] || JP['KeyZ']) {
-            if (this.sel === 0) { sfxConfirm(); goTransition(IntroCutsceneState); }
+            if (this.sel === 0) { sfxConfirm(); goTransition(StoryIntroState); }
             else if (this.sel === 1) { sfxConfirm(); goTransition(TrainingSelectState); }
             else sfxMenu();
           }
@@ -960,7 +968,6 @@
         Shake.update(dt); Particles.update(dt); Floats.update(dt); Trail.update(dt);
         if (this.hitFlash > 0) this.hitFlash -= dt;
         if (this.ptMsgT > 0) this.ptMsgT -= dt;
-        if (this.smashStar) this.smashStar.t -= dt;
         if (this.phase === 'intro') { if (this.introT > 2.5 || JP['Enter'] || JP['KeyZ']) this.phase = 'play'; return; }
         if (this.phase === 'results') {
           if (JP['Enter'] || JP['KeyZ']) { 
@@ -1346,6 +1353,7 @@
 
         // Smash Star marker
         if (this.smashStar) {
+          this.smashStar.t -= dt;
           if (this.smashStar.t <= 0) this.smashStar = null;
           else {
             const ss = COURT.toScreen(this.smashStar.cx, this.smashStar.cz);
@@ -1922,10 +1930,7 @@
         if (this.phase === 'results') { if (JP['Enter'] || JP['KeyZ']) { Stats.addXP(this.score * 5 + this.dives * 8, 'agility'); sfxWin(); go(TrainingSelectState); } return; }
 
         // Fire balls to random target zones — adjusted fireRate for longer flight
-        this.fireT += dt; 
-        const baseRate = curMap === 0 ? 2.8 : 2.2;
-        this.fireRate = Math.max(curMap === 0 ? 2.4 : 1.8, baseRate - this.score * 0.02);
-        
+        this.fireT += dt; this.fireRate = Math.max(2.4, 3.6 - this.score * 0.02);
         if (this.fireT >= this.fireRate) {
           this.fireT = 0;
           // Pick a target zone — avoid the one closest to player
@@ -1933,10 +1938,9 @@
           const playerZone = this.targets.reduce((best, t, i) => Math.abs(t - this.px2) < Math.abs(this.targets[best] - this.px2) ? i : best, 0);
           do { zone = ~~(Math.random() * 5); } while (zone === playerZone && Math.random() > 0.2);
           const tx = this.targets[zone];
-          // ty is now deeper, dur is longer (2.4s) — faster in city
-          const duration = curMap === 0 ? 2.4 : 1.8;
-          this.balls.push({ x: W / 2, y: H * 0.25, tx, ty: H * 0.82, t: 0, dur: duration, done: false, missed: false, zone, bounced: false });
-          this.splitWindow = true; this.splitGrace = curMap === 0 ? 0.5 : 0.35; this.flash = 0.15;
+          // ty is now deeper, dur is longer (2.4s)
+          this.balls.push({ x: W / 2, y: H * 0.25, tx, ty: H * 0.82, t: 0, dur: 2.4, done: false, missed: false, zone, bounced: false });
+          this.splitWindow = true; this.splitGrace = 0.5; this.flash = 0.15;
           tone(900, 'sine', 0.04, 0.12); Shake.add(1);
         }
 
@@ -1945,7 +1949,7 @@
         if ((JP['KeyZ'] || JP['Space'] || JP['KeyX']) && this.splitWindow && !this.diving) { this.splitReady = true; tone(660, 'square', 0.04, 0.15); }
 
         // Player movement
-        const sp = this.splitReady ? (curMap === 0 ? 420 : 500) : (curMap === 0 ? 180 : 220);
+        const sp = this.splitReady ? 420 : 180;
         if (!this.diving) {
           if (Keys['ArrowLeft']) this.px2 = Math.max(10, this.px2 - sp * dt);
           if (Keys['ArrowRight']) this.px2 = Math.min(W - 10, this.px2 + sp * dt);
@@ -1968,33 +1972,27 @@
             if (!b.bounced) { b.bounced = true; sfxBounce('hard'); }
           }
 
-          // Advanced Trail for City Gym
-          if (curMap === 1 && ~~(this.t * 60) % 2 === 0) {
-            Particles.emit(b.cx, b.cy, { count: 1, color: [C.cyan, '#fff'], speed: 5, life: 0.3, gravity: 0, size: 3 });
-          }
-
           // Diving hit — triggers on Direction + Action (or just KeyX)
           const dirHit = (Keys['ArrowLeft'] || Keys['ArrowRight']) && (JP['KeyZ'] || JP['Space'] || JP['KeyX']);
           if (!b.done && p > 0.7 && p < 1.15 && !this.diving) {
-            const diveRange = curMap === 0 ? 75 : 90;
+            const diveRange = 75;
             if ((JP['KeyX'] || dirHit) && Math.abs(this.px2 - b.cx) < diveRange && Math.abs(this.px2 - b.cx) > 30) {
               this.diving = true; this.diveT = 0.6;
               // Lunge toward ball
               this.px2 = lerp(this.px2, b.tx, 0.75); // Lunge further
-              b.done = true; this.score += (curMap === 0 ? 2 : 3); this.combo++; this.dives++;
+              b.done = true; this.score += 2; this.combo++; this.dives++;
               this.maxCombo = Math.max(this.maxCombo, this.combo);
               this.msg = 'DIVING HIT!'; this.msgT = 1.0;
               sfxTopspin(); Shake.add(5); freezeT = 0.08;
-              const col = curMap === 0 ? [C.gold, '#fff'] : [C.cyan, '#fff', C.gold];
-              Particles.emit(b.cx, b.cy, { count: 15, color: col, speed: 70, life: 0.5, upward: 1.5, glow: true });
-              Floats.add('DIVE!', b.cx, b.cy - 30, curMap === 0 ? C.gold : C.cyan, 12);
+              Particles.emit(b.cx, b.cy, { count: 15, color: [C.gold, '#fff'], speed: 70, life: 0.5, upward: 1.5, glow: true });
+              Floats.add('DIVE!', b.cx, b.cy - 30, C.gold, 12);
               continue;
             }
           }
 
           // Normal reach check
           if (!b.done && p >= 1.0) {
-            const catchZone = this.splitReady ? (curMap === 0 ? 50 : 60) : 38;
+            const catchZone = this.splitReady ? 50 : 38;
             if (Math.abs(this.px2 - b.tx) < catchZone) {
               b.done = true; this.score++; this.combo++; this.maxCombo = Math.max(this.maxCombo, this.combo);
               this.msg = this.splitReady ? 'SPLIT-STEP!' : 'NICE REACH!'; this.msgT = 0.8;
@@ -2002,7 +2000,7 @@
               Particles.emit(b.cx, b.cy, { count: 10, color: [C.cyan, '#c8ff40', '#fff'], speed: 50, life: 0.4, upward: 1, glow: true });
               Floats.add(this.splitReady ? 'SPLIT!' : 'REACH!', b.cx, b.cy - 20, this.splitReady ? C.gold : C.white, 9);
               this.splitReady = false; this.splitWindow = false;
-            } else if (p >= (curMap === 0 ? 1.15 : 1.1)) {
+            } else if (p >= 1.15) {
               b.missed = true; this.lives--; this.combo = 0;
               this.msg = 'MISSED!'; this.msgT = 0.8;
               sfxLose(); Shake.add(4);
