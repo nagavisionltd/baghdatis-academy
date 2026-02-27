@@ -84,6 +84,14 @@
     const spr = new Image(); spr.src = 'marcos_sheet.png?v=2026';
     const oppSpr = new Image(); oppSpr.src = 'opponent_sheet_new.png?v=2026';
     const titleBg = new Image(); titleBg.src = 'title_bg_hd.png?v=2026';
+    const thumbs = {
+      split: new Image(), pace: new Image(), smash: new Image(), toss: new Image(), spirit: new Image()
+    };
+    thumbs.split.src = 'thumb_split.png?v=2026';
+    thumbs.pace.src = 'thumb_pace.png?v=2026';
+    thumbs.smash.src = 'thumb_smash.png?v=2026';
+    thumbs.toss.src = 'thumb_toss.png?v=2026';
+    thumbs.spirit.src = 'thumb_spirit.png?v=2026';
     let sprLoaded = false, oppLoaded = false, titleBgLoaded = false;
     spr.onload = () => { sprLoaded = true; };
     oppSpr.onload = () => { oppLoaded = true; };
@@ -1682,7 +1690,13 @@
     // ═══ TRAINING SELECT ════════════════════════════════════
     const TrainingSelectState = {
       t: 0, sel: 0,
-      drills: [{ name: 'SPLIT-STEP SPRINT', stat: 'agility', color: C.cyan, desc: 'TIME your hop for explosive reach' }, { name: 'BORROW THE PACE', stat: 'stamina', color: C.orange, desc: 'QUICK-TAP to block 130mph serves' }, { name: 'TOPSPIN SMASH', stat: 'power', color: C.red, desc: 'HIT the rhythm zone for heavy spin' }, { name: 'SERVICE TOWER', stat: 'serve', color: C.gold, desc: 'BALANCE the toss for ACE serves' }, { name: 'FIGHTING SPIRIT', stat: 'stamina', color: C.purple, desc: 'BREATHE through the fist pump' }],
+      drills: [
+        { name: 'SPLIT-STEP SPRINT', stat: 'agility', color: C.cyan, desc: 'TIME your hop for explosive reach', thumb: 'split' },
+        { name: 'BORROW THE PACE', stat: 'stamina', color: C.orange, desc: 'QUICK-TAP to block 130mph serves', thumb: 'pace' },
+        { name: 'TOPSPIN SMASH', stat: 'power', color: C.red, desc: 'HIT the rhythm zone for heavy spin', thumb: 'smash' },
+        { name: 'SERVICE TOWER', stat: 'serve', color: C.gold, desc: 'BALANCE the toss for ACE serves', thumb: 'toss' },
+        { name: 'FIGHTING SPIRIT', stat: 'stamina', color: C.purple, desc: 'BREATHE through the fist pump', thumb: 'spirit' }
+      ],
       enter() { this.t = 0; this.sel = 0; },
       update(dt) {
         this.t += dt;
@@ -1697,8 +1711,20 @@
         this.drills.forEach((d, i) => {
           const y = 38 + i * 66, sel = i === this.sel;
           px(30, y, W - 60, 60, sel ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.5)'); px(30, y, 4, 60, d.color);
+          
+          // Draw Thumbnail
+          const img = thumbs[d.thumb];
+          if (img && img.complete) {
+            ctx.drawImage(img, 38, y + 6, 80, 48);
+            ctx.strokeStyle = sel ? d.color : 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(38, y + 6, 80, 48);
+          } else {
+            px(38, y + 6, 80, 48, '#1a1a2a');
+          }
+
           if (sel) { px(30, y, W - 60, 1, d.color + 'aa'); px(30, y + 59, W - 60, 1, d.color + '44'); }
-          txt(d.name, 48, y + 18, sel ? C.accent : C.white, 8); txt(d.desc, 48, y + 36, C.dim, 6);
+          txt(d.name, 128, y + 18, sel ? C.accent : C.white, 8); txt(d.desc, 128, y + 36, C.dim, 6);
           const sv = Stats[d.stat]; px(W - 85, y + 12, 52, 36, d.color + '22'); px(W - 85, y + 12, 52, 1, d.color + '66');
           txt(d.stat.slice(0, 3).toUpperCase(), W - 59, y + 26, d.color, 6, 'center'); bar(W - 83, y + 32, 48, 6, sv, 99, d.color, '#1a1a2a');
           if (sel) txt('▶', W - 22, y + 30, C.gold, 8);
