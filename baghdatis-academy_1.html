@@ -81,9 +81,9 @@
 
     // Sprite Sheets — uniform grid system
     const SHEET_COLS = 5, SHEET_ROWS = 4, FRAME_W = 128, FRAME_H = 160;
-    const spr = new Image(); spr.src = 'marcos_sheet.png';
-    const oppSpr = new Image(); oppSpr.src = 'opponent_sheet_new.png';
-    const titleBg = new Image(); titleBg.src = 'title_bg_hd.png';
+    const spr = new Image(); spr.src = 'marcos_sheet.png?v=2026';
+    const oppSpr = new Image(); oppSpr.src = 'opponent_sheet_new.png?v=2026';
+    const titleBg = new Image(); titleBg.src = 'title_bg_hd.png?v=2026';
     let sprLoaded = false, oppLoaded = false, titleBgLoaded = false;
     spr.onload = () => { sprLoaded = true; };
     oppSpr.onload = () => { oppLoaded = true; };
@@ -485,7 +485,8 @@
           const bounce = prog < 1 ? Math.sin(prog * Math.PI) * 8 : 0;
           const alpha = clamp(prog * 2, 0, 1);
           ctx.globalAlpha = alpha; ctx.shadowColor = C.gold; ctx.shadowBlur = 20 + bounce;
-          const x = W / 2 - (titleLetters.length * 11) / 2 + i * 11 + 5;
+          const spacing = 22; // Increased from 11
+          const x = W / 2 - (titleLetters.length * spacing) / 2 + i * spacing + 5;
           txt(titleLetters[i], x, H * 0.2 - bounce, C.gold, 20, 'left');
         }
         ctx.shadowBlur = 15;
@@ -494,7 +495,8 @@
           const prog = clamp((this.t - delay) * 3, 0, 1);
           const bounce = prog < 1 ? Math.sin(prog * Math.PI) * 5 : 0;
           ctx.globalAlpha = clamp(prog * 2, 0, 1);
-          const x = W / 2 - (subLetters.length * 9) / 2 + i * 9 + 4;
+          const spacing = 18; // Increased from 9
+          const x = W / 2 - (subLetters.length * spacing) / 2 + i * spacing + 4;
           txt(subLetters[i], x, H * 0.2 + 28 - bounce, '#f8a030', 16, 'left');
         }
         ctx.shadowBlur = 8; ctx.shadowColor = '#c0e0ff';
@@ -1315,15 +1317,15 @@
       clouds: [], birds: [], leafTimer: 0,
       npcs: [
         {
-          x: 105, y: 195, name: 'COACH NICK', color: '#4080ff', bobOff: 0,
+          x: 80, y: 115, name: 'COACH NICK', color: '#4080ff', bobOff: 0,
           lines: ['Welcome to Baghdatis Academy!', 'I see potential in you, kid.', 'Train hard at the drills zone...', 'Or test yourself on the match court!', 'Remember: footwork is EVERYTHING.']
         },
         {
-          x: 390, y: 180, name: 'TRAINER ELENA', color: '#ff8040', bobOff: 1.5,
+          x: 256, y: 115, name: 'TRAINER ELENA', color: '#ff8040', bobOff: 1.5,
           lines: ['Drills build champions!', 'Split-step timing is crucial.', 'Focus on your topspin — it wins rallies.', 'Hit the Training Zone when ready!']
         },
         {
-          x: 256, y: 345, name: 'SHOP OWNER', color: '#c040ff', bobOff: 2.2,
+          x: 420, y: 110, name: 'SHOP OWNER', color: '#c040ff', bobOff: 2.2,
           lines: ['Welcome to the Pro Shop!', 'New rackets boost your power.', 'Speed shoes improve court coverage.', 'Check what\'s in stock — press Z!']
         },
         {
@@ -1336,8 +1338,8 @@
         }
       ],
       zones: [
-        { x: 195, y: 140, w: 140, h: 65, label: 'TRAINING', color: '#ff804044', bg: '#ff804011', action: 'training', icon: '🎾' },
-        { x: 25, y: 135, w: 110, h: 65, label: 'MATCH', color: '#4080ff44', bg: '#4080ff11', action: 'match', icon: '⚔' },
+        { x: 185, y: 125, w: 140, h: 65, label: 'TRAINING', color: '#ff804044', bg: '#ff804011', action: 'training', icon: '🎾' },
+        { x: 10, y: 125, w: 110, h: 65, label: 'MATCH', color: '#4080ff44', bg: '#4080ff11', action: 'match', icon: '⚔' },
         { x: W - 138, y: 50, w: 134, h: 50, label: 'PRO SHOP', color: '#c040ff44', bg: '#c040ff11', action: 'shop', icon: '🛒' }
       ],
       enter() {
@@ -1378,7 +1380,7 @@
           this.animT += dt; if (this.animT > 0.14) { this.frame = (this.frame + 1) % 2; this.animT = 0; }
           this.anim = this.frame === 0 ? 'run1' : 'run2';
         } else this.anim = 'stand';
-        this.px2 = clamp(this.px2, 20, W - 20); this.py = clamp(this.py, 100, H - 50);
+        this.px2 = clamp(this.px2, 20, W - 20); this.py = clamp(this.py, 60, H - 40);
         // Zone entry
         for (const z of this.zones) {
           const inZ = this.px2 > z.x && this.px2 < z.x + z.w && this.py > z.y && this.py < z.y + z.h;
