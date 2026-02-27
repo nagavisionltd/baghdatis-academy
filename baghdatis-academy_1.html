@@ -426,7 +426,7 @@
       enter() { this.t = 0; sfxFistPump(); },
       update(dt) {
         this.t += dt;
-        if (this.t > 4) goTransition(HubState);
+        if (this.t > 4 && !Transition.active) goTransition(HubState);
       },
       draw() {
         ctx.fillStyle = '#0a1020'; ctx.fillRect(0, 0, W, H);
@@ -469,7 +469,7 @@
           ctx.stroke();
         });
 
-        const msg = curMap === 0 ? "TRAVELLING TO CITY CENTER..." : "RETURNING TO ACADEMY...";
+        const msg = curMap === 1 ? "HEADING TO NEXT CITY..." : "RETURNING TO ACADEMY...";
         txt(msg, W / 2, H / 2 + 80, C.gold, 8, 'center');
         
         const prog = Math.min(1, this.t / 4);
