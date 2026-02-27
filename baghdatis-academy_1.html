@@ -84,6 +84,7 @@
     const spr = new Image(); spr.src = 'marcos_sheet.png?v=2026';
     const oppSpr = new Image(); oppSpr.src = 'opponent_sheet_new.png?v=2026';
     const titleBg = new Image(); titleBg.src = 'title_bg_hd.png?v=2026';
+    const introBg = new Image(); introBg.src = 'intro_bg.png?v=2026';
     const thumbs = {
       split: new Image(), pace: new Image(), smash: new Image(), toss: new Image(), spirit: new Image()
     };
@@ -360,7 +361,120 @@
     // State machine
     let STATE = null;
     let freezeT = 0; // Global hit-stop freeze timer
+    let curMap = 0; // 0 = Academy, 1 = City Gym
     function go(s) { if (STATE?.exit) STATE.exit(); STATE = s; if (STATE?.enter) STATE.enter(); }
+
+    // ═══ INTRO CUTSCENE ════════════════════════════════════
+    const IntroCutsceneState = {
+      t: 0, phase: 0, 
+      lines: [
+        "In the heart of the city...",
+        "A legacy was born.",
+        "One racket. One dream.",
+        "To be the best at Baghdatis Academy."
+      ],
+      enter() { this.t = 0; this.phase = 0; startBGM(); },
+      update(dt) {
+        this.t += dt;
+        if (JP['Enter'] || JP['KeyZ'] || JP['Space']) {
+          this.t += 2; // Fast forward
+        }
+        if (this.t > 12) goTransition(HubState);
+        if (JP['Escape']) goTransition(HomeState);
+      },
+      draw() {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+        
+        // Panning Background
+        const scroll = this.t * 20;
+        ctx.save();
+        ctx.translate(-scroll % W, 0);
+        ctx.drawImage(introBg, 0, 0, W, H);
+        ctx.drawImage(introBg, W, 0, W, H);
+        ctx.restore();
+
+        // Cinematic Bars
+        px(0, 0, W, 60, '#000');
+        px(0, H - 60, W, 60, '#000');
+
+        // Text Phases
+        const lineIdx = Math.floor(this.t / 3);
+        if (lineIdx < this.lines.length) {
+          const lineT = (this.t % 3);
+          const alpha = lineT < 0.5 ? lineT / 0.5 : (lineT > 2.5 ? 1 - (lineT - 2.5) / 0.5 : 1);
+          ctx.globalAlpha = clamp(alpha, 0, 1);
+          txt(this.lines[lineIdx], W / 2, H / 2 + 100, C.white, 8, 'center');
+          ctx.globalAlpha = 1;
+        }
+
+        // Character Silhouette
+        const charX = W / 2 + Math.sin(this.t) * 50;
+        const breathe = Math.sin(this.t * 3) * 2;
+        ctx.save();
+        ctx.filter = 'brightness(0) shadow(0 0 10px rgba(59,130,246,0.5))';
+        drawSpr('ready', charX - 32, H / 2 - 40 + breathe, 64, 80);
+        ctx.restore();
+
+        txt('SKIP: Z', W - 10, H - 10, C.dim, 6, 'right');
+      }
+    };
+
+    // ═══ LOADING SCREEN ════════════════════════════════════
+    const LoadingScreenState = {
+      t: 0, 
+      enter() { this.t = 0; sfxFistPump(); },
+      update(dt) {
+        this.t += dt;
+        if (this.t > 4) goTransition(HubState);
+      },
+      draw() {
+        ctx.fillStyle = '#0a1020'; ctx.fillRect(0, 0, W, H);
+        
+        // Rolling road
+        px(0, H / 2 + 20, W, 40, '#1a1a2a');
+        for (let i = 0; i < 10; i++) {
+          const ox = (i * 60 - this.t * 200) % (W + 60);
+          px(ox, H / 2 + 38, 30, 4, '#ffffff44');
+        }
+
+        // Panning city silhouette
+        ctx.fillStyle = '#050510';
+        for (let i = 0; i < 8; i++) {
+          const ox = (i * 80 - this.t * 50) % (W + 80);
+          ctx.fillRect(ox, H / 2 - 40 - (i % 3) * 20, 60, 60);
+        }
+
+        // Bus
+        const busX = W / 2 - 40 + Math.sin(this.t * 10) * 2;
+        const busY = H / 2 - 10 + Math.abs(Math.sin(this.t * 15)) * 2;
+        
+        // Body
+        px(busX, busY, 80, 32, '#2060c0'); 
+        px(busX, busY, 80, 4, '#3080e0');
+        px(busX, busY + 28, 80, 4, '#1a4a90');
+        
+        // Windows
+        for (let wi = 0; wi < 5; wi++) px(busX + 6 + wi * 15, busY + 6, 11, 10, '#a0d8ff');
+        
+        // Wheels (spinning)
+        ctx.fillStyle = '#222'; 
+        const wheelRot = this.t * 20;
+        [16, 64].forEach(off => {
+          ctx.beginPath(); ctx.arc(busX + off, busY + 34, 6, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#444'; ctx.lineWidth = 2;
+          ctx.beginPath(); 
+          ctx.moveTo(busX + off, busY + 34); 
+          ctx.lineTo(busX + off + Math.cos(wheelRot) * 6, busY + 34 + Math.sin(wheelRot) * 6); 
+          ctx.stroke();
+        });
+
+        const msg = curMap === 0 ? "TRAVELLING TO CITY CENTER..." : "RETURNING TO ACADEMY...";
+        txt(msg, W / 2, H / 2 + 80, C.gold, 8, 'center');
+        
+        const prog = Math.min(1, this.t / 4);
+        bar(W / 2 - 100, H / 2 + 100, 200, 4, prog * 100, 100, C.cyan);
+      }
+    };
 
     // ═══ PERSPECTIVE COURT ENGINE ═══════════════════════════
     const COURT = {
@@ -463,7 +577,7 @@
           if (JP['ArrowUp']) { this.sel = (this.sel - 1 + 3) % 3; sfxMenuUp(); }
           if (JP['ArrowDown']) { this.sel = (this.sel + 1) % 3; sfxMenuDown(); }
           if (JP['Enter'] || JP['KeyZ']) {
-            if (this.sel === 0) { sfxConfirm(); goTransition(HubState); }
+            if (this.sel === 0) { sfxConfirm(); goTransition(IntroCutsceneState); }
             else if (this.sel === 1) { sfxConfirm(); goTransition(TrainingSelectState); }
             else sfxMenu();
           }
@@ -1388,7 +1502,7 @@
           this.animT += dt; if (this.animT > 0.14) { this.frame = (this.frame + 1) % 2; this.animT = 0; }
           this.anim = this.frame === 0 ? 'run1' : 'run2';
         } else this.anim = 'stand';
-        this.px2 = clamp(this.px2, 20, W - 20); this.py = clamp(this.py, 60, H - 40);
+        this.px2 = clamp(this.px2, 20, W - 20); this.py = clamp(this.py, 40, H - 40);
         // Zone entry
         for (const z of this.zones) {
           const inZ = this.px2 > z.x && this.px2 < z.x + z.w && this.py > z.y && this.py < z.y + z.h;
