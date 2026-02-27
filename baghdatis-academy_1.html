@@ -968,6 +968,7 @@
         Shake.update(dt); Particles.update(dt); Floats.update(dt); Trail.update(dt);
         if (this.hitFlash > 0) this.hitFlash -= dt;
         if (this.ptMsgT > 0) this.ptMsgT -= dt;
+        if (this.smashStar) this.smashStar.t -= dt;
         if (this.phase === 'intro') { if (this.introT > 2.5 || JP['Enter'] || JP['KeyZ']) this.phase = 'play'; return; }
         if (this.phase === 'results') {
           if (JP['Enter'] || JP['KeyZ']) { 
@@ -1353,7 +1354,6 @@
 
         // Smash Star marker
         if (this.smashStar) {
-          this.smashStar.t -= dt;
           if (this.smashStar.t <= 0) this.smashStar = null;
           else {
             const ss = COURT.toScreen(this.smashStar.cx, this.smashStar.cz);
