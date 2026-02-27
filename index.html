@@ -171,7 +171,7 @@
     function sfxMatchWin() { [523, 659, 784, 1047, 1318].forEach((f, i) => tone(f, 'square', 0.2, 0.2, i * 0.12));[523, 659, 784, 1047, 1318].forEach((f, i) => tone(f, 'sine', 0.25, 0.1, i * 0.12 + 0.05)); }
 
     // BGM — simple chiptune loop using oscillators
-    let bgmPlaying = false, bgmNodes = [];
+    let bgmPlaying = false, bgmNodes = [], bgmTimeout = null;
     function startBGM() {
       const ac = ga(); if (!ac || bgmPlaying) return; bgmPlaying = true;
       const melody = [523, 659, 784, 659, 523, 784, 659, 523, 587, 698, 784, 698, 587, 523, 440, 523];
@@ -192,11 +192,11 @@
           g.gain.setValueAtTime(0.03, now + i * 0.5); g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.5 + 0.45);
           o.start(now + i * 0.5); o.stop(now + i * 0.5 + 0.48); bgmNodes.push(o);
         });
-        setTimeout(playLoop, loopDur * 1000);
+        bgmTimeout = setTimeout(playLoop, loopDur * 1000);
       }
       playLoop();
     }
-    function stopBGM() { bgmPlaying = false; bgmNodes.forEach(n => { try { n.stop(); } catch (e) { } }); bgmNodes = []; }
+    function stopBGM() { bgmPlaying = false; if (bgmTimeout) clearTimeout(bgmTimeout); bgmNodes.forEach(n => { try { n.stop(); } catch (e) { } }); bgmNodes = []; }
 
     // Ambient court noise
     let ambientPlaying = false, ambientNodes = [];
@@ -376,6 +376,7 @@
       ],
       enter() { this.t = 0; this.phase = 0; startBGM(); },
       update(dt) {
+        if (Transition.active) return;
         this.t += dt;
         if (JP['Enter'] || JP['KeyZ'] || JP['Space']) {
           this.t += 2; // Fast forward
@@ -425,8 +426,9 @@
       t: 0, 
       enter() { this.t = 0; sfxFistPump(); },
       update(dt) {
+        if (Transition.active) return;
         this.t += dt;
-        if (this.t > 4 && !Transition.active) goTransition(HubState);
+        if (this.t > 4) goTransition(HubState);
       },
       draw() {
         ctx.fillStyle = '#0a1020'; ctx.fillRect(0, 0, W, H);
@@ -1557,10 +1559,10 @@
         }
 
         // Bus Travel
-        const bX = curMap === 0 ? 210 : 400; 
-        const bY = curMap === 0 ? 320 : 300;
-        const nearBus = Math.sqrt((this.px2 - (bX + 40)) ** 2 + (this.py - (bY + 16)) ** 2) < 55;
-        if (nearBus && (JP['Enter'] || JP['KeyZ'])) {
+        const busX = curMap === 0 ? 210 : 400; 
+        const busY = curMap === 0 ? 320 : 300;
+        const nearBus = Math.sqrt((this.px2 - (busX + 40)) ** 2 + (this.py - (busY + 16)) ** 2) < 55;
+        if (nearBus && (JP['Enter'] || JP['KeyZ']) && !Transition.active) {
           sfxConfirm();
           curMap = curMap === 0 ? 1 : 0;
           goTransition(LoadingScreenState);
