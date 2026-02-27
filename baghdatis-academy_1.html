@@ -1459,11 +1459,11 @@
           lines: ['Don\'t get too comfortable here.', 'I\'ve been training every single day.', 'Next time we meet on court...', 'I won\'t go easy on you. Game on.']
         }
       ],
-      zones: [
-        { x: 185, y: 125, w: 140, h: 65, label: 'TRAINING', color: '#ff804044', bg: '#ff804011', action: 'training', icon: '🎾' },
-        { x: 10, y: 125, w: 110, h: 65, label: 'MATCH', color: '#4080ff44', bg: '#4080ff11', action: 'match', icon: '⚔' },
-        { x: W - 138, y: 50, w: 134, h: 50, label: 'PRO SHOP', color: '#c040ff44', bg: '#c040ff11', action: 'shop', icon: '🛒' }
-      ],
+                zones: [
+                  { x: 185, y: 125, w: 140, h: 65, label: 'TRAINING', color: '#ff804044', bg: '#ff804011', action: 'training', icon: '🎾' },
+                  { x: 10, y: 125, w: 110, h: 65, label: 'MATCH', color: '#4080ff44', bg: '#4080ff11', action: 'match', icon: '⚔' },
+                  { x: W - 138, y: 40, w: 134, h: 80, label: 'PRO SHOP', color: '#c040ff44', bg: '#c040ff11', action: 'shop', icon: '🛒' }
+                ],
       enter() {
         this.t = 0; this.activeNPC = null; this.dlgLine = 0;
         // Spawn clouds
