@@ -960,6 +960,7 @@
         Shake.update(dt); Particles.update(dt); Floats.update(dt); Trail.update(dt);
         if (this.hitFlash > 0) this.hitFlash -= dt;
         if (this.ptMsgT > 0) this.ptMsgT -= dt;
+        if (this.smashStar) this.smashStar.t -= dt;
         if (this.phase === 'intro') { if (this.introT > 2.5 || JP['Enter'] || JP['KeyZ']) this.phase = 'play'; return; }
         if (this.phase === 'results') {
           if (JP['Enter'] || JP['KeyZ']) { 
@@ -1345,7 +1346,6 @@
 
         // Smash Star marker
         if (this.smashStar) {
-          this.smashStar.t -= dt;
           if (this.smashStar.t <= 0) this.smashStar = null;
           else {
             const ss = COURT.toScreen(this.smashStar.cx, this.smashStar.cz);
@@ -1922,7 +1922,10 @@
         if (this.phase === 'results') { if (JP['Enter'] || JP['KeyZ']) { Stats.addXP(this.score * 5 + this.dives * 8, 'agility'); sfxWin(); go(TrainingSelectState); } return; }
 
         // Fire balls to random target zones — adjusted fireRate for longer flight
-        this.fireT += dt; this.fireRate = Math.max(2.4, 3.6 - this.score * 0.02);
+        this.fireT += dt; 
+        const baseRate = curMap === 0 ? 2.8 : 2.2;
+        this.fireRate = Math.max(curMap === 0 ? 2.4 : 1.8, baseRate - this.score * 0.02);
+        
         if (this.fireT >= this.fireRate) {
           this.fireT = 0;
           // Pick a target zone — avoid the one closest to player
@@ -1930,9 +1933,10 @@
           const playerZone = this.targets.reduce((best, t, i) => Math.abs(t - this.px2) < Math.abs(this.targets[best] - this.px2) ? i : best, 0);
           do { zone = ~~(Math.random() * 5); } while (zone === playerZone && Math.random() > 0.2);
           const tx = this.targets[zone];
-          // ty is now deeper, dur is longer (2.4s)
-          this.balls.push({ x: W / 2, y: H * 0.25, tx, ty: H * 0.82, t: 0, dur: 2.4, done: false, missed: false, zone, bounced: false });
-          this.splitWindow = true; this.splitGrace = 0.5; this.flash = 0.15;
+          // ty is now deeper, dur is longer (2.4s) — faster in city
+          const duration = curMap === 0 ? 2.4 : 1.8;
+          this.balls.push({ x: W / 2, y: H * 0.25, tx, ty: H * 0.82, t: 0, dur: duration, done: false, missed: false, zone, bounced: false });
+          this.splitWindow = true; this.splitGrace = curMap === 0 ? 0.5 : 0.35; this.flash = 0.15;
           tone(900, 'sine', 0.04, 0.12); Shake.add(1);
         }
 
@@ -1941,7 +1945,7 @@
         if ((JP['KeyZ'] || JP['Space'] || JP['KeyX']) && this.splitWindow && !this.diving) { this.splitReady = true; tone(660, 'square', 0.04, 0.15); }
 
         // Player movement
-        const sp = this.splitReady ? 420 : 180;
+        const sp = this.splitReady ? (curMap === 0 ? 420 : 500) : (curMap === 0 ? 180 : 220);
         if (!this.diving) {
           if (Keys['ArrowLeft']) this.px2 = Math.max(10, this.px2 - sp * dt);
           if (Keys['ArrowRight']) this.px2 = Math.min(W - 10, this.px2 + sp * dt);
@@ -1964,27 +1968,33 @@
             if (!b.bounced) { b.bounced = true; sfxBounce('hard'); }
           }
 
+          // Advanced Trail for City Gym
+          if (curMap === 1 && ~~(this.t * 60) % 2 === 0) {
+            Particles.emit(b.cx, b.cy, { count: 1, color: [C.cyan, '#fff'], speed: 5, life: 0.3, gravity: 0, size: 3 });
+          }
+
           // Diving hit — triggers on Direction + Action (or just KeyX)
           const dirHit = (Keys['ArrowLeft'] || Keys['ArrowRight']) && (JP['KeyZ'] || JP['Space'] || JP['KeyX']);
           if (!b.done && p > 0.7 && p < 1.15 && !this.diving) {
-            const diveRange = 75;
+            const diveRange = curMap === 0 ? 75 : 90;
             if ((JP['KeyX'] || dirHit) && Math.abs(this.px2 - b.cx) < diveRange && Math.abs(this.px2 - b.cx) > 30) {
               this.diving = true; this.diveT = 0.6;
               // Lunge toward ball
               this.px2 = lerp(this.px2, b.tx, 0.75); // Lunge further
-              b.done = true; this.score += 2; this.combo++; this.dives++;
+              b.done = true; this.score += (curMap === 0 ? 2 : 3); this.combo++; this.dives++;
               this.maxCombo = Math.max(this.maxCombo, this.combo);
               this.msg = 'DIVING HIT!'; this.msgT = 1.0;
               sfxTopspin(); Shake.add(5); freezeT = 0.08;
-              Particles.emit(b.cx, b.cy, { count: 15, color: [C.gold, '#fff'], speed: 70, life: 0.5, upward: 1.5, glow: true });
-              Floats.add('DIVE!', b.cx, b.cy - 30, C.gold, 12);
+              const col = curMap === 0 ? [C.gold, '#fff'] : [C.cyan, '#fff', C.gold];
+              Particles.emit(b.cx, b.cy, { count: 15, color: col, speed: 70, life: 0.5, upward: 1.5, glow: true });
+              Floats.add('DIVE!', b.cx, b.cy - 30, curMap === 0 ? C.gold : C.cyan, 12);
               continue;
             }
           }
 
           // Normal reach check
           if (!b.done && p >= 1.0) {
-            const catchZone = this.splitReady ? 50 : 38;
+            const catchZone = this.splitReady ? (curMap === 0 ? 50 : 60) : 38;
             if (Math.abs(this.px2 - b.tx) < catchZone) {
               b.done = true; this.score++; this.combo++; this.maxCombo = Math.max(this.maxCombo, this.combo);
               this.msg = this.splitReady ? 'SPLIT-STEP!' : 'NICE REACH!'; this.msgT = 0.8;
@@ -1992,7 +2002,7 @@
               Particles.emit(b.cx, b.cy, { count: 10, color: [C.cyan, '#c8ff40', '#fff'], speed: 50, life: 0.4, upward: 1, glow: true });
               Floats.add(this.splitReady ? 'SPLIT!' : 'REACH!', b.cx, b.cy - 20, this.splitReady ? C.gold : C.white, 9);
               this.splitReady = false; this.splitWindow = false;
-            } else if (p >= 1.15) {
+            } else if (p >= (curMap === 0 ? 1.15 : 1.1)) {
               b.missed = true; this.lives--; this.combo = 0;
               this.msg = 'MISSED!'; this.msgT = 0.8;
               sfxLose(); Shake.add(4);
