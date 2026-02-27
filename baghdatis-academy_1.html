@@ -350,6 +350,7 @@
     // RPG Stats
     const Stats = {
       power: 25, agility: 25, stamina: 25, touch: 25, serve: 25, spin: 25, xp: 0, level: 1, coins: 50,
+      gymChampionsDefeated: 0,
       addXP(amount, stat) {
         this.xp += amount;
         this.coins += ~~(amount * 1.5);
@@ -1437,33 +1438,47 @@
       t: 0, px2: W / 2, py: H * 0.6, anim: 'stand', animT: 0, frame: 0, facing: 1,
       activeNPC: null, dlgLine: 0,
       clouds: [], birds: [], leafTimer: 0,
-      npcs: [
+      
+      // Map Data
+      mapData: [
         {
-          x: 80, y: 115, name: 'COACH NICK', color: '#4080ff', bobOff: 0,
-          lines: ['Welcome to Baghdatis Academy!', 'I see potential in you, kid.', 'Train hard at the drills zone...', 'Or test yourself on the match court!', 'Remember: footwork is EVERYTHING.']
+          name: "Academy",
+          bg1: '#3a8adf', bg2: '#a8e0ff', ground: '#4a9a38',
+          npcs: [
+            { x: 80, y: 115, name: 'COACH NICK', color: '#4080ff', bobOff: 0, lines: ['Welcome to Baghdatis Academy!', 'I see potential in you, kid.', 'Train hard at the drills zone...', 'Or test yourself on the match court!', 'Remember: footwork is EVERYTHING.'] },
+            { x: 256, y: 115, name: 'TRAINER ELENA', color: '#ff8040', bobOff: 1.5, lines: ['Drills build champions!', 'Split-step timing is crucial.', 'Focus on your topspin — it wins rallies.', 'Hit the Training Zone when ready!'] },
+            { x: 420, y: 110, name: 'SHOP OWNER', color: '#c040ff', bobOff: 2.2, lines: ['Welcome to the Pro Shop!', 'New rackets boost your power.', 'Speed shoes improve court coverage.', 'Check what\'s in stock — press Z!'] },
+            { x: 450, y: 300, name: 'BALL KID', color: '#40d080', bobOff: 3.1, lines: ['Hey! Did you know...', 'If you time your split-step perfectly,', 'you move WAY faster to the ball!', '...I wish I could play like you!'] },
+            { x: 60, y: 310, name: 'RIVAL ALEX', color: '#f04060', bobOff: 0.7, lines: ['Don\'t get too comfortable here.', 'I\'ve been training every single day.', 'Next time we meet on court...', 'I won\'t go easy on you. Game on.'] }
+          ],
+          zones: [
+            { x: 185, y: 125, w: 140, h: 65, label: 'TRAINING', color: '#ff804044', bg: '#ff804011', action: 'training', icon: '🎾' },
+            { x: 10, y: 125, w: 110, h: 65, label: 'MATCH', color: '#4080ff44', bg: '#4080ff11', action: 'match', icon: '⚔' },
+            { x: W - 138, y: 40, w: 134, h: 80, label: 'PRO SHOP', color: '#c040ff44', bg: '#c040ff11', action: 'shop', icon: '🛒' }
+          ]
         },
         {
-          x: 256, y: 115, name: 'TRAINER ELENA', color: '#ff8040', bobOff: 1.5,
-          lines: ['Drills build champions!', 'Split-step timing is crucial.', 'Focus on your topspin — it wins rallies.', 'Hit the Training Zone when ready!']
-        },
-        {
-          x: 420, y: 110, name: 'SHOP OWNER', color: '#c040ff', bobOff: 2.2,
-          lines: ['Welcome to the Pro Shop!', 'New rackets boost your power.', 'Speed shoes improve court coverage.', 'Check what\'s in stock — press Z!']
-        },
-        {
-          x: 450, y: 300, name: 'BALL KID', color: '#40d080', bobOff: 3.1,
-          lines: ['Hey! Did you know...', 'If you time your split-step perfectly,', 'you move WAY faster to the ball!', '...I wish I could play like you!']
-        },
-        {
-          x: 60, y: 310, name: 'RIVAL ALEX', color: '#f04060', bobOff: 0.7,
-          lines: ['Don\'t get too comfortable here.', 'I\'ve been training every single day.', 'Next time we meet on court...', 'I won\'t go easy on you. Game on.']
+          name: "City Gym",
+          bg1: '#0d1525', bg2: '#1a3a60', ground: '#333',
+          npcs: [
+            { 
+              x: 256, y: 120, name: 'GYM BOSS', color: '#f03030', bobOff: 0, 
+              get lines() {
+                if (Stats.gymChampionsDefeated === 0) return ['So you think you can clear this gym?', 'You need to defeat my 3 champions first.', 'No rookie has ever done it.', 'Are you ready for the ultimate test?'];
+                if (Stats.gymChampionsDefeated === 1) return ['One down, two to go.', 'The next champion won\'t be so easy.', 'Show me more of that spirit!'];
+                if (Stats.gymChampionsDefeated === 2) return ['Impressive... only one remains.', 'The Grand Champion is waiting for you.', 'Don\'t let the pressure break you now.'];
+                return ['You did it! You cleared the City Gym!', 'You are a true legend of the court.', 'The Academy is proud of you, kid.'];
+              }
+            },
+            { x: 100, y: 300, name: 'ADVANCED TRAINER', color: '#00ffff', bobOff: 1.2, lines: ['The air is thinner here, kid.', 'Your stamina will be tested like never before.', 'Use the specialized machines...', 'Or get left behind in the dust.'] }
+          ],
+          zones: [
+            { x: 180, y: 100, w: 155, h: 80, label: 'BOSS CHALLENGE', color: '#f0303044', bg: '#f0303011', action: 'boss', icon: '🔥' },
+            { x: 50, y: 250, w: 120, h: 70, label: 'ADVANCED DRILLS', color: '#00ffff44', bg: '#00ffff11', action: 'training_adv', icon: '⚡' }
+          ]
         }
       ],
-                zones: [
-                  { x: 185, y: 125, w: 140, h: 65, label: 'TRAINING', color: '#ff804044', bg: '#ff804011', action: 'training', icon: '🎾' },
-                  { x: 10, y: 125, w: 110, h: 65, label: 'MATCH', color: '#4080ff44', bg: '#4080ff11', action: 'match', icon: '⚔' },
-                  { x: W - 138, y: 40, w: 134, h: 80, label: 'PRO SHOP', color: '#c040ff44', bg: '#c040ff11', action: 'shop', icon: '🛒' }
-                ],
+
       enter() {
         this.t = 0; this.activeNPC = null; this.dlgLine = 0;
         // Spawn clouds
@@ -1476,13 +1491,14 @@
       },
       update(dt) {
         this.t += dt;
+        const cur = this.mapData[curMap];
         // Animate clouds
         for (const c of this.clouds) { c.x += c.speed * dt; if (c.x > W + 60) c.x = -c.w - 10; }
         // Animate birds
         for (const b of this.birds) { b.x += b.vx * dt; b.wingT += dt * 8; if (b.x > W + 20) { b.x = -20; b.y = 15 + Math.random() * 45; } }
         // Ambient leaf/dust particles
         this.leafTimer += dt;
-        if (this.leafTimer > 0.4) { this.leafTimer = 0; Particles.emit(Math.random() * W, H * 0.5 + Math.random() * H * 0.4, { count: 1, color: ['#90d060', '#c8e060', '#e8d870'], speed: 12, life: 2.5, size: 2, gravity: -8 }); }
+        if (this.leafTimer > 0.4) { this.leafTimer = 0; const col = curMap === 0 ? ['#90d060', '#c8e060', '#e8d870'] : ['#00ffff', '#444', '#888']; Particles.emit(Math.random() * W, H * 0.5 + Math.random() * H * 0.4, { count: 1, color: col, speed: 12, life: 2.5, size: 2, gravity: -8 }); }
         Particles.update(dt);
 
         if (this.activeNPC) {
@@ -1494,7 +1510,7 @@
           if (JP['Escape']) { this.activeNPC = null; sfxCancel(); }
           return;
         }
-        const spd = 90; let dx = 0, dy = 0;
+        const spd = 110; let dx = 0, dy = 0;
         if (Keys['ArrowLeft']) { dx = -1; this.facing = -1; } if (Keys['ArrowRight']) { dx = 1; this.facing = 1; }
         if (Keys['ArrowUp']) dy = -1; if (Keys['ArrowDown']) dy = 1;
         if (dx || dy) {
@@ -1503,19 +1519,31 @@
           this.anim = this.frame === 0 ? 'run1' : 'run2';
         } else this.anim = 'stand';
         this.px2 = clamp(this.px2, 20, W - 20); this.py = clamp(this.py, 40, H - 40);
+        
         // Zone entry
-        for (const z of this.zones) {
+        for (const z of cur.zones) {
           const inZ = this.px2 > z.x && this.px2 < z.x + z.w && this.py > z.y && this.py < z.y + z.h;
           if (inZ && (JP['Enter'] || JP['KeyZ'])) {
             sfxConfirm();
-            if (z.action === 'training') goTransition(TrainingSelectState);
-            else if (z.action === 'match') goTransition(MatchState);
+            if (z.action === 'training' || z.action === 'training_adv') goTransition(TrainingSelectState);
+            else if (z.action === 'match' || z.action === 'boss') goTransition(MatchState);
             else if (z.action === 'shop') goTransition(ShopState);
           }
         }
+
+        // Bus Travel
+        const bX = curMap === 0 ? 210 : 400; 
+        const bY = curMap === 0 ? 320 : 300;
+        const nearBus = Math.sqrt((this.px2 - (bX + 40)) ** 2 + (this.py - (bY + 16)) ** 2) < 55;
+        if (nearBus && (JP['Enter'] || JP['KeyZ'])) {
+          sfxConfirm();
+          curMap = curMap === 0 ? 1 : 0;
+          goTransition(LoadingScreenState);
+        }
+
         // NPC talk
-        if (JP['Enter'] || JP['KeyZ']) {
-          for (const n of this.npcs) {
+        for (const n of cur.npcs) {
+          if (JP['Enter'] || JP['KeyZ']) {
             if (Math.sqrt((this.px2 - n.x) ** 2 + (this.py - n.y) ** 2) < 42) {
               this.activeNPC = n; this.dlgLine = 0; sfxMenu(); break;
             }
@@ -1594,203 +1622,137 @@
         if (Math.random() < 0.08) Particles.emit(fx, fy - 14, { count: 1, color: ['#60c0ff', '#a0e0ff'], speed: 15, life: 0.8, size: 1.5, gravity: 50, upward: 2 });
       },
       draw() {
+        const cur = this.mapData[curMap];
         // === SKY with gradient ===
         const skyGrad = ctx.createLinearGradient(0, 0, 0, 95);
-        skyGrad.addColorStop(0, '#3a8adf'); skyGrad.addColorStop(0.6, '#6ac0f8'); skyGrad.addColorStop(1, '#a8e0ff');
+        skyGrad.addColorStop(0, cur.bg1); skyGrad.addColorStop(1, cur.bg2);
         ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, W, 95);
-        // Sun
-        ctx.save(); ctx.globalAlpha = 0.25; ctx.fillStyle = '#ffe860';
-        ctx.beginPath(); ctx.arc(W - 60, 30, 22, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 0.08; ctx.beginPath(); ctx.arc(W - 60, 30, 40, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
+        
+        if (curMap === 0) {
+          // Sun
+          ctx.save(); ctx.globalAlpha = 0.25; ctx.fillStyle = '#ffe860';
+          ctx.beginPath(); ctx.arc(W - 60, 30, 22, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = 0.08; ctx.beginPath(); ctx.arc(W - 60, 30, 40, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        } else {
+          // Moon / Night
+          ctx.save(); ctx.globalAlpha = 0.4; ctx.fillStyle = '#fff';
+          ctx.beginPath(); ctx.arc(W - 60, 30, 18, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = 0.1; ctx.beginPath(); ctx.arc(W - 60, 30, 30, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+
         // Clouds
         for (const c of this.clouds) {
-          ctx.fillStyle = 'rgba(255,255,255,0.45)';
+          ctx.fillStyle = curMap === 0 ? 'rgba(255,255,255,0.45)' : 'rgba(100,120,255,0.15)';
           ctx.beginPath(); ctx.ellipse(c.x, c.y, c.w * 0.5, 8, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.beginPath(); ctx.ellipse(c.x - c.w * 0.2, c.y + 3, c.w * 0.3, 6, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.beginPath(); ctx.ellipse(c.x + c.w * 0.2, c.y + 2, c.w * 0.35, 7, 0, 0, Math.PI * 2); ctx.fill();
         }
         // Birds
         for (const b of this.birds) {
           const wing = Math.sin(b.wingT) * 3;
-          ctx.strokeStyle = 'rgba(40,40,40,0.5)'; ctx.lineWidth = 1;
+          ctx.strokeStyle = curMap === 0 ? 'rgba(40,40,40,0.5)' : 'rgba(200,200,255,0.3)'; ctx.lineWidth = 1;
           ctx.beginPath(); ctx.moveTo(b.x - 4, b.y + wing); ctx.lineTo(b.x, b.y); ctx.lineTo(b.x + 4, b.y + wing); ctx.stroke();
         }
 
         // === GROUND ===
-        ctx.fillStyle = '#4a9a38'; ctx.fillRect(0, 90, W, H - 90);
-        // Grass color bands
-        for (let gi = 0; gi < 8; gi++) {
-          ctx.fillStyle = gi % 2 === 0 ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.02)';
-          ctx.fillRect(0, 95 + gi * 36, W, 36);
+        ctx.fillStyle = cur.ground; ctx.fillRect(0, 90, W, H - 90);
+        
+        if (curMap === 0) {
+          // Map 1 specific drawing
+          // Grass color bands
+          for (let gi = 0; gi < 8; gi++) {
+            ctx.fillStyle = gi % 2 === 0 ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.02)';
+            ctx.fillRect(0, 95 + gi * 36, W, 36);
+          }
+          // Dirt paths
+          px(0, 218, W, 20, C.sand); px(0, 236, W, 4, C.sandD);
+          px(168, 95, 22, H - 95, C.sandD); px(188, 95, 2, H - 95, C.sand);
+          
+          // Mini Courts
+          [[42, 138, 118, 60, '#2a8c4a'], [368, 138, 108, 60, '#2a8c4a']].forEach(([cx, cy, cw, ch, col]) => {
+            px(cx, cy, cw, ch, col);
+            ctx.strokeStyle = '#ffffff55'; ctx.lineWidth = 1; ctx.strokeRect(cx + 4, cy + 4, cw - 8, ch - 8);
+            px(cx + 4, cy + ch / 2 - 1, cw - 8, 2, '#e0e0e0cc');
+          });
+          
+          this.drawBuilding(2, 48, 125, 48, '#e8d8c0', '#c83828', 10, 'ACADEMY HQ', 4, '#5a3018');
+          this.drawBuilding(W - 138, 48, 134, 48, '#d0e0f8', '#2060a8', 10, 'PRO SHOP', 4, '#2850a0');
+          this.drawBuilding(178, 55, 155, 40, '#e8d0b0', '#d06020', 8, 'GYM / TRAINING', 5, '#6a4020');
+          
+          this.drawTree(20, 115, 2.5); this.drawTree(145, 110, 2); this.drawTree(340, 108, 3);
+          this.drawFountain(256, 260);
+        } else {
+          // Map 2 specific drawing (City Gym)
+          // Concrete grid
+          ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+          for(let i=0; i<W; i+=40) { ctx.beginPath(); ctx.moveTo(i, 90); ctx.lineTo(i, H); ctx.stroke(); }
+          
+          // Neon Buildings
+          this.drawBuilding(180, 60, 155, 80, '#1a1a2a', '#f03030', 5, 'CITY ELITE GYM', 6, '#301010');
+          this.drawBuilding(20, 220, 100, 60, '#101020', '#00ffff', 5, 'TEK SHOP', 3, '#004444');
+          
+          // Street Lights
+          [50, 460].forEach(lx => {
+            px(lx-2, 100, 4, H-100, '#222');
+            ctx.save(); ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 15;
+            px(lx-6, 100, 12, 6, '#00ffff'); ctx.restore();
+          });
         }
-        // Dirt paths
-        px(0, 218, W, 20, C.sand); px(0, 236, W, 4, C.sandD);
-        px(168, 95, 22, H - 95, C.sandD); px(188, 95, 2, H - 95, C.sand);
-        // Path gravel
-        for (let gi = 0; gi < 30; gi++) {
-          px((gi * 97 + 13) % W, 220 + (gi * 31) % 16, 2, 2, 'rgba(0,0,0,0.1)');
-          px(170 + (gi * 7) % 18, 100 + (gi * 29) % (H - 130), 2, 1, 'rgba(0,0,0,0.08)');
-        }
-        // Swaying grass tufts
-        for (let g = 0; g < 20; g++) {
-          const gx = (g * 67 + 11) % W, gy = 130 + (g * 43) % 200;
-          const sway = Math.sin(this.t * 2 + g * 1.3) * 2;
-          ctx.strokeStyle = '#60b848'; ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + sway, gy - 5); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(gx + 3, gy); ctx.lineTo(gx + 3 + sway * 0.7, gy - 4); ctx.stroke();
-        }
-        // Flower patches
-        [[30, 280, '#ff6080'], [90, 330, '#ffcc40'], [430, 260, '#cc60ff'], [470, 330, '#60a0ff'], [300, 290, '#ff8050']].forEach(([fx, fy, col]) => {
-          const bob = Math.sin(this.t * 2.5 + fx) * 1;
-          px(fx, fy - 2 + bob, 3, 3, col); px(fx + 4, fy + bob, 3, 3, col); px(fx + 2, fy + 3 + bob, 3, 3, col);
-          px(fx + 1, fy + 1, 1, 3, '#3a7a28'); // stem
-        });
 
-        // === MINI COURTS (visible courts in the ground) ===
-        [[42, 138, 118, 60, '#2a8c4a'], [368, 138, 108, 60, '#2a8c4a']].forEach(([cx, cy, cw, ch, col]) => {
-          px(cx, cy, cw, ch, col);
-          px(cx, cy, cw, 1, '#ffffff66'); px(cx, cy + ch, cw, 1, '#ffffff44');
-          px(cx, cy, 1, ch, '#ffffff44'); px(cx + cw, cy, 1, ch, '#ffffff44');
-          // Court lines
-          ctx.strokeStyle = '#ffffff55'; ctx.lineWidth = 1;
-          ctx.strokeRect(cx + 4, cy + 4, cw - 8, ch - 8);
-          ctx.beginPath(); ctx.moveTo(cx + cw / 2, cy + 4); ctx.lineTo(cx + cw / 2, cy + ch - 4); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(cx + 4, cy + ch / 2); ctx.lineTo(cx + cw - 4, cy + ch / 2); ctx.stroke();
-          // Net
-          px(cx + 4, cy + ch / 2 - 1, cw - 8, 2, '#e0e0e0cc');
-        });
-        // Center practice court (clay color)
-        px(195, 138, 140, 60, '#c8783a');
-        ctx.strokeStyle = '#ffffff55'; ctx.lineWidth = 1; ctx.strokeRect(199, 142, 132, 52);
-        px(199, 168, 132, 2, '#e0e0e0cc');
-
-        // === BUILDINGS ===
-        this.drawBuilding(2, 48, 125, 48, '#e8d8c0', '#c83828', 10, 'ACADEMY HQ', 4, '#5a3018');
-        this.drawBuilding(W - 138, 48, 134, 48, '#d0e0f8', '#2060a8', 10, 'PRO SHOP', 4, '#2850a0');
-        this.drawBuilding(178, 55, 155, 40, '#e8d0b0', '#d06020', 8, 'GYM / TRAINING', 5, '#6a4020');
-
-        // === DECORATIVE ELEMENTS ===
-        // Trees (swaying)
-        this.drawTree(20, 115, 2.5); this.drawTree(145, 110, 2); this.drawTree(340, 108, 3);
-        this.drawTree(490, 112, 2.5); this.drawTree(250, 100, 1.5);
-        this.drawTree(80, 260, 2); this.drawTree(500, 280, 2.5);
-        // Fountain (centre-ish)
-        this.drawFountain(256, 260);
-        // Benches
-        [[135, 238], [370, 238]].forEach(([bx, by]) => { px(bx, by, 24, 4, '#6a4020'); px(bx + 2, by + 4, 2, 4, '#5a3018'); px(bx + 20, by + 4, 2, 4, '#5a3018'); px(bx, by - 2, 24, 2, '#7a5030'); });
-
-        // === BUS / COACH (future city travel) ===
-        const busX = 210, busY = 320;
+        // === BUS / COACH ===
+        const busX = curMap === 0 ? 210 : 400; 
+        const busY = curMap === 0 ? 320 : 300;
         // Body
-        px(busX, busY, 80, 32, '#2060c0'); px(busX, busY, 80, 4, '#3080e0');
-        px(busX, busY + 28, 80, 4, '#1a4a90');
+        px(busX, busY, 80, 32, '#2060c0'); px(busX, busY, 80, 4, '#3080e0'); px(busX, busY + 28, 80, 4, '#1a4a90');
         // Windows
         for (let wi = 0; wi < 5; wi++) px(busX + 6 + wi * 15, busY + 6, 11, 10, '#a0d8ff');
-        // Door
-        px(busX + 68, busY + 10, 10, 18, '#1a3060'); px(busX + 70, busY + 14, 6, 2, '#80c0e0');
-        // Wheels
-        ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(busX + 16, busY + 34, 5, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(busX + 64, busY + 34, 5, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#444'; ctx.beginPath(); ctx.arc(busX + 16, busY + 34, 2, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(busX + 64, busY + 34, 2, 0, Math.PI * 2); ctx.fill();
-        // Headlights
-        px(busX - 2, busY + 10, 3, 6, '#ffee40'); px(busX + 79, busY + 10, 3, 6, '#ff4040');
-        // Label on bus
         px(busX + 14, busY + 20, 52, 9, 'rgba(0,0,0,0.7)');
-        txt('CITY BUS', busX + 40, busY + 27, C.gold, 5, 'center');
-        // "COMING SOON" tooltip
+        txt(curMap === 0 ? 'TO CITY' : 'TO ACADEMY', busX + 40, busY + 27, C.gold, 5, 'center');
+        
         const nearBus = Math.sqrt((this.px2 - (busX + 40)) ** 2 + (this.py - (busY + 16)) ** 2) < 55;
         if (nearBus) {
           px(busX + 10, busY - 18, 60, 14, 'rgba(0,0,0,0.88)');
-          px(busX + 10, busY - 18, 60, 1, '#ffcc00cc');
-          txt('COMING SOON', busX + 40, busY - 8, C.gold, 5, 'center');
+          txt('[Z] TRAVEL', busX + 40, busY - 8, C.gold, 5, 'center');
         }
-        // Fence segments
-        for (let fi = 0; fi < 6; fi++) { const fx2 = 25 + fi * 22; px(fx2, 95, 2, 12, '#8a7060'); px(fx2 - 4, 97, 10, 1, '#a08070'); px(fx2 - 4, 102, 10, 1, '#a08070'); }
 
-        // === ZONES (interactive areas) ===
-        for (const z of this.zones) {
-          // Glowing floor indicator
-          const pulse = Math.sin(this.t * 3) * 0.03;
+        // === ZONES ===
+        for (const z of cur.zones) {
           px(z.x, z.y, z.w, z.h, z.bg);
-          // Animated border
           ctx.strokeStyle = z.color.replace('44', '66'); ctx.lineWidth = 1;
-          ctx.setLineDash([4, 4]); ctx.lineDashOffset = -this.t * 20;
           ctx.strokeRect(z.x, z.y, z.w, z.h);
-          ctx.setLineDash([]);
           const near = Math.sqrt((this.px2 - (z.x + z.w / 2)) ** 2 + (this.py - (z.y + z.h / 2)) ** 2) < 80;
           if (near) {
-            // Highlight pulse
-            ctx.fillStyle = z.color.replace('44', `${~~(15 + Math.sin(this.t * 4) * 8)}`.padStart(2, '0'));
-            ctx.fillRect(z.x, z.y, z.w, z.h);
-            // Label popup
             px(z.x, z.y - 19, z.w, 16, 'rgba(0,0,0,0.88)');
-            px(z.x, z.y - 19, z.w, 1, z.color.replace('44', 'cc'));
             txt('[Z] ' + z.label, z.x + z.w / 2, z.y - 7, C.accent, 6, 'center');
           }
         }
 
-        // === NPCs with idle animation ===
-        for (const n of this.npcs) {
+        // === NPCs ===
+        for (const n of cur.npcs) {
           const breathe = Math.sin(this.t * 2.5 + n.bobOff) * 1.5;
-          const nSpr = (n.name === 'TRAINER ELENA' || n.name === 'RIVAL ALEX') ? oppSpr : null;
-          const nFrame = ~~(this.t * 1.5 + n.bobOff) % 3 === 0 ? 'stand' : 'idle';
-          drawSpr(nFrame, n.x - 14, n.y - 32 + breathe, 28, 38, n.name === 'RIVAL ALEX', 1, nSpr);
-          // Shadow
-          ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(n.x, n.y + 4, 10, 3, 0, 0, Math.PI * 2); ctx.fill();
-          const near = Math.sqrt((this.px2 - n.x) ** 2 + (this.py - n.y) ** 2) < 48;
-          if (near) {
-            // "!" exclamation bubble
-            const bubY = n.y - 48 + breathe + Math.sin(this.t * 4) * 2;
-            px(n.x - 7, bubY - 3, 14, 14, '#fff');
-            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(n.x - 2, bubY + 11); ctx.lineTo(n.x + 2, bubY + 11); ctx.lineTo(n.x, bubY + 15); ctx.fill();
-            txt('!', n.x, bubY + 8, n.color, 8, 'center');
-            // Name tag
-            const nw = n.name.length * 4.5 + 10;
-            px(n.x - nw / 2, n.y - 38, nw, 12, 'rgba(0,0,0,0.85)');
-            txt(n.name, n.x, n.y - 29, n.color, 5, 'center');
+          const nSpr = (n.name.includes('TRAINER') || n.name.includes('RIVAL') || n.name.includes('BOSS')) ? oppSpr : null;
+          drawSpr('stand', n.x - 14, n.y - 32 + breathe, 28, 38, n.name.includes('RIVAL'), 1, nSpr);
+          if (Math.sqrt((this.px2 - n.x) ** 2 + (this.py - n.y) ** 2) < 48) {
+            txt(n.name, n.x, n.y - 38, n.color, 5, 'center');
           }
         }
 
         // === PLAYER ===
-        const breathe = Math.sin(this.t * 3) * 0.5;
-        drawSpr(this.anim, this.px2 - 15, this.py - 32 + 8 + breathe, 30, 42, this.facing < 0);
-        ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(this.px2, this.py + 4, 10, 3, 0, 0, Math.PI * 2); ctx.fill();
-
-        // === AMBIENT PARTICLES ===
+        drawSpr(this.anim, this.px2 - 15, this.py - 24, 30, 42, this.facing < 0);
+        
         Particles.draw();
 
-        // === DIALOGUE BOX ===
+        // Dialogue
         if (this.activeNPC) {
           const n = this.activeNPC;
-          // Darkened edges
           ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(0, 0, W, H);
-          // Box with gradient
           const dbY = H - 85;
-          const dbGrad = ctx.createLinearGradient(0, dbY, 0, H - 10);
-          dbGrad.addColorStop(0, 'rgba(8,12,28,0.97)'); dbGrad.addColorStop(1, 'rgba(14,18,34,0.97)');
-          ctx.fillStyle = dbGrad; ctx.fillRect(16, dbY, W - 32, 72);
-          // Border
-          px(16, dbY, W - 32, 2, n.color); px(16, dbY + 70, W - 32, 2, n.color + '44');
-          px(16, dbY, 2, 72, n.color + '44'); px(W - 18, dbY, 2, 72, n.color + '44');
-          // Character portrait box
-          px(22, dbY + 6, 38, 38, 'rgba(0,0,0,0.5)');
-          px(22, dbY + 6, 38, 1, n.color + '88');
-          drawSpr('stand', 26, dbY + 8, 30, 34, false, 1, (n.name === 'TRAINER ELENA' || n.name === 'RIVAL ALEX') ? oppSpr : null);
-          // Name
+          ctx.fillStyle = 'rgba(10,15,35,0.98)'; ctx.fillRect(16, dbY, W - 32, 72);
+          px(16, dbY, W - 32, 2, n.color);
           txt(n.name, 68, dbY + 16, n.color, 7);
-          // Line progress dots
-          for (let di = 0; di < n.lines.length; di++) {
-            px(W - 30 - (n.lines.length - di) * 8, dbY + 8, 4, 4, di <= this.dlgLine ? n.color : '#333');
-          }
-          // Text with typewriter-ish full display
           txt(n.lines[this.dlgLine], 68, dbY + 36, C.white, 7);
-          // Advance hint
-          const adv = this.dlgLine < n.lines.length - 1 ? '▼ Z: NEXT' : '■ Z: CLOSE';
-          if (~~(this.t * 2.5) % 2) txt(adv, W - 24, dbY + 60, C.accent, 5, 'right');
         }
-        drawGlobalHUD(); txt('ESC: TITLE', 5, H - 4, C.dim, 6);
+        drawGlobalHUD();
       }
     };
 
