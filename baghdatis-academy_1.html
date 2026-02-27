@@ -679,6 +679,7 @@
       ball: { cx: 0, cz: 0.5, ch: 0, vcx: 0, vcz: 0, vch: 0, spin: 0, active: false },
       p: { cx: 0, cz: 0.85, anim: 'stand', animT: 0, facing: 1, swing: false, swingT: 0, swingType: 'flat', stamina: 100, charge: 0 },
       o: { cx: 0, cz: -0.75, anim: 'stand', animT: 0, swing: false, swingT: 0, returnCooldown: 0 },
+      oppName: 'ROOKIE', oppLevel: 1,
       pPts: 0, oPts: 0, pGames: 0, oGames: 0, pSets: 0, oSets: 0,
       rally: 0, lastHit: 'none', bounced: 0, serving: true, server: 'player',
       ptMsg: '', ptMsgT: 0, hitFlash: 0, matchWinner: null,
@@ -709,6 +710,17 @@
         this.serving = true; this.server = 'player'; this.deadBallTimer = 0;
         this.netWobble = 0; this.footT = 0;
         this.smashStar = null; this.specialGauge = 0;
+        
+        // Initialize Opponent based on map
+        if (curMap === 0) {
+          this.oppName = "ACADEMY ROOKIE";
+          this.oppLevel = 1;
+        } else {
+          const names = ["IRON MIKE", "SHADOW STEP", "GRAND CHAMPION"];
+          this.oppName = names[Math.min(2, Stats.gymChampionsDefeated)];
+          this.oppLevel = 5 + Stats.gymChampionsDefeated * 5;
+        }
+
         Trail.hist = []; Particles.pool = []; Floats.pool = [];
         this.surface = ['hard', 'clay', 'grass'][~~(Math.random() * 3)];
         this.resetBallForServe();
@@ -776,10 +788,11 @@
           targetX = (Math.random() - 0.5) * 0.4;
         }
 
+        const lvlMod = 1.0 + (this.oppLevel * 0.04);
         b.vcx = (targetX - b.cx) * 0.75;
-        b.vcz = 1.0 + Math.random() * 0.2;
+        b.vcz = (1.0 + Math.random() * 0.2) * lvlMod;
         b.vch = 0.65 + Math.random() * 0.3;
-        b.spin = (Math.random() - 0.5) * 0.4;
+        b.spin = (Math.random() - 0.5) * 0.4 * lvlMod;
         b.active = true; this.bounced = 0;
 
         o.anim = b.cx < o.cx ? 'backhand' : 'forehand'; o.animT = 0.4;
@@ -933,7 +946,12 @@
         if (this.ptMsgT > 0) this.ptMsgT -= dt;
         if (this.phase === 'intro') { if (this.introT > 2.5 || JP['Enter'] || JP['KeyZ']) this.phase = 'play'; return; }
         if (this.phase === 'results') {
-          if (JP['Enter'] || JP['KeyZ']) { Stats.addXP(this.matchWinner === 'player' ? 80 : 20, 'agility'); go(HubState); }
+          if (JP['Enter'] || JP['KeyZ']) { 
+            const won = this.matchWinner === 'player';
+            if (won && curMap === 1) Stats.gymChampionsDefeated++;
+            Stats.addXP(won ? 80 : 20, 'agility'); 
+            go(HubState); 
+          }
           return;
         }
         const b = this.ball, p = this.p, o = this.o;
@@ -1051,8 +1069,8 @@
           // AI Logic — designed for sustained rallies
           if (o.returnCooldown > 0) o.returnCooldown -= dt;
           const ballComingToOpp = b.vcz < 0;
-          // AI balancing: scales with player level and game count
-          const diffMod = Math.min(1.5, (Stats.level * 0.05) + (this.oGames * 0.04));
+          // AI balancing: scales with opponent level and game count
+          const diffMod = Math.min(2.5, (this.oppLevel * 0.08) + (this.oGames * 0.05));
           const oSpeed = (0.75 + diffMod) * dt;
           if (ballComingToOpp && b.active) {
             // Better prediction: use more of actual ball trajectory
@@ -1367,7 +1385,7 @@
         txt(`G:${this.oGames}`, W - 108, 12, '#f05050', 7, 'center');
         txt(oScore, W - 80, 12, C.white, 10, 'right');
         ctx.shadowColor = '#f05050'; ctx.shadowBlur = 4;
-        txt('OPP', W - 12, 12, '#f05050', 7, 'right');
+        txt(this.oppName, W - 12, 12, '#f05050', 7, 'right');
         ctx.shadowBlur = 0;
 
         // Server indicator
@@ -1404,9 +1422,9 @@
           if (this.introT < 2.5) {
             ctx.globalAlpha = Math.min(1, this.introT * 1.5);
             px(70, H / 2 - 55, W - 140, 96, 'rgba(0,0,0,0.88)'); px(70, H / 2 - 55, W - 140, 2, C.green);
-            txt('EXHIBITION MATCH', W / 2, H / 2 - 28, C.gold, 10, 'center');
-            txt('First to 6 games (lead by 2)', W / 2, H / 2 - 6, C.white, 6, 'center');
-            txt('Real tennis scoring!', W / 2, H / 2 + 10, C.dim, 6, 'center');
+            txt('VS ' + this.oppName, W / 2, H / 2 - 28, C.gold, 10, 'center');
+            txt(`Opponent Level: ${this.oppLevel}`, W / 2, H / 2 - 6, C.white, 6, 'center');
+            txt('First to 6 games (lead by 2)', W / 2, H / 2 + 10, C.dim, 6, 'center');
             txt('PRESS Z TO START', W / 2, H / 2 + 28, C.cyan, 7, 'center');
             ctx.globalAlpha = 1;
           }
@@ -1428,7 +1446,14 @@
           txt(`COURT: ${this.surface.toUpperCase()}`, 10, 30, this.surfStats[this.surface].color, 5);
           const xp = won ? 80 : 20;
           txt(`+${xp} XP  ·  +${Math.floor(xp * 1.5)}¢`, W / 2, 222, C.accent, 7, 'center');
-          if (~~(this.t * 2) % 2 === 0) txt('PRESS Z TO CONTINUE', W / 2, 262, C.gold, 8, 'center');
+          
+          if (curMap === 1 && won) {
+            const count = Math.min(3, Stats.gymChampionsDefeated + 1);
+            const msg = count === 3 ? "GYM CLEARED!" : `CHAMPIONS DEFEATED: ${count}/3`;
+            txt(msg, W / 2, 245, C.gold, 8, 'center');
+          }
+
+          if (~~(this.t * 2) % 2 === 0) txt('PRESS Z TO CONTINUE', W / 2, 275, C.gold, 8, 'center');
         }
       }
     };
@@ -1691,6 +1716,16 @@
           this.drawBuilding(180, 60, 155, 80, '#1a1a2a', '#f03030', 5, 'CITY ELITE GYM', 6, '#301010');
           this.drawBuilding(20, 220, 100, 60, '#101020', '#00ffff', 5, 'TEK SHOP', 3, '#004444');
           
+          // Champions Wall
+          px(W - 120, 100, 100, 60, 'rgba(0,0,0,0.6)');
+          px(W - 120, 100, 100, 2, C.gold);
+          txt('CHAMPIONS', W - 70, 115, C.gold, 5, 'center');
+          for(let i=0; i<3; i++) {
+            const won = Stats.gymChampionsDefeated > i;
+            px(W - 110 + i * 30, 125, 20, 20, won ? C.gold : '#222');
+            if (won) txt('★', W - 100 + i * 30, 140, C.dark, 8, 'center');
+          }
+
           // Street Lights
           [50, 460].forEach(lx => {
             px(lx-2, 100, 4, H-100, '#222');
@@ -1766,18 +1801,31 @@
     // ═══ TRAINING SELECT ════════════════════════════════════
     const TrainingSelectState = {
       t: 0, sel: 0,
-      drills: [
-        { name: 'SPLIT-STEP SPRINT', stat: 'agility', color: C.cyan, desc: 'TIME your hop for explosive reach', thumb: 'split' },
-        { name: 'BORROW THE PACE', stat: 'stamina', color: C.orange, desc: 'QUICK-TAP to block 130mph serves', thumb: 'pace' },
-        { name: 'TOPSPIN SMASH', stat: 'power', color: C.red, desc: 'HIT the rhythm zone for heavy spin', thumb: 'smash' },
-        { name: 'SERVICE TOWER', stat: 'serve', color: C.gold, desc: 'BALANCE the toss for ACE serves', thumb: 'toss' },
-        { name: 'FIGHTING SPIRIT', stat: 'stamina', color: C.purple, desc: 'BREATHE through the fist pump', thumb: 'spirit' }
-      ],
+      get drills() {
+        if (curMap === 0) {
+          return [
+            { name: 'SPLIT-STEP SPRINT', stat: 'agility', color: C.cyan, desc: 'TIME your hop for explosive reach', thumb: 'split' },
+            { name: 'BORROW THE PACE', stat: 'stamina', color: C.orange, desc: 'QUICK-TAP to block 130mph serves', thumb: 'pace' },
+            { name: 'TOPSPIN SMASH', stat: 'power', color: C.red, desc: 'HIT the rhythm zone for heavy spin', thumb: 'smash' },
+            { name: 'SERVICE TOWER', stat: 'serve', color: C.gold, desc: 'BALANCE the toss for ACE serves', thumb: 'toss' },
+            { name: 'FIGHTING SPIRIT', stat: 'stamina', color: C.purple, desc: 'BREATHE through the fist pump', thumb: 'spirit' }
+          ];
+        } else {
+          return [
+            { name: 'NEON SPRINT', stat: 'agility', color: '#00ffff', desc: 'ADVANCED movement in high-G city air', thumb: 'split' },
+            { name: 'CYBER BLOCK', stat: 'stamina', color: '#ff00ff', desc: 'BLOCK hypersonic automated serves', thumb: 'pace' },
+            { name: 'GRAVITY SMASH', stat: 'power', color: '#ff3333', desc: 'CRUSH targets with extreme topspin', thumb: 'smash' },
+            { name: 'TECH TOSS', stat: 'serve', color: '#ffff00', desc: 'PRECISION electronic serve calibration', thumb: 'toss' },
+            { name: 'IRON WILL', stat: 'stamina', color: '#00ff00', desc: 'ULTIMATE mental focus under pressure', thumb: 'spirit' }
+          ];
+        }
+      },
       enter() { this.t = 0; this.sel = 0; },
       update(dt) {
         this.t += dt;
-        if (JP['ArrowUp']) { this.sel = (this.sel - 1 + 5) % 5; sfxMenu(); }
-        if (JP['ArrowDown']) { this.sel = (this.sel + 1) % 5; sfxMenu(); }
+        const count = this.drills.length;
+        if (JP['ArrowUp']) { this.sel = (this.sel - 1 + count) % count; sfxMenu(); }
+        if (JP['ArrowDown']) { this.sel = (this.sel + 1) % count; sfxMenu(); }
         if (JP['Enter'] || JP['KeyZ']) { sfxWin();[Minigame_SplitStep, Minigame_BorrowPace, Minigame_TopspinSmash, Minigame_ServiceToss, Minigame_FightingSpirit][this.sel].enter && go([Minigame_SplitStep, Minigame_BorrowPace, Minigame_TopspinSmash, Minigame_ServiceToss, Minigame_FightingSpirit][this.sel]); }
         if (JP['Escape']) go(HubState);
       },
